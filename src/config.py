@@ -47,4 +47,6 @@ BEHAVIORAL_DIRECTION_MAP_CACHE = INTERIM_DIR / "behavioral_direction_map.json"
 CES_DIRECTION_MAP_CACHE = INTERIM_DIR / "ces_behavioral_direction_map.json"
 STUDENTLIFE_DIRECTION_MAP_CACHE = INTERIM_DIR / "studentlife_behavioral_direction_map.json"
 MODEL_CHECKPOINT_DIR = PROCESSED_DIR / "checkpoints"
+MODEL_LOG_DIR = PROCESSED_DIR / "logs"
 MODEL_CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+MODEL_LOG_DIR.mkdir(parents=True, exist_ok=True)

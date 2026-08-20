@@ -147,6 +147,27 @@ Next:
 The Sensitivity Engine must describe model-predicted sensitivity, not causal
 effects.
 
+## Train the Baseline GRU
+
+Training is designed for Google Colab or Kaggle with a CUDA GPU. Upload the
+repository and the generated sequence caches, or regenerate the caches there.
+Train one dataset at a time:
+
+```powershell
+python -m src.train studentlife --device cuda --epochs 30
+python -m src.train ces --device cuda --epochs 30
+```
+
+For a small local CPU smoke test only:
+
+```powershell
+python -m src.train studentlife --device cpu --epochs 1 --max-train-windows 64
+```
+
+The trainer automatically uses CUDA with `--device auto` when available. It
+writes training history to `data/processed/logs/` and the best checkpoint to
+`data/processed/checkpoints/`. These generated files are ignored by Git.
+
 ## Repository Contents
 
 - `src/`: preprocessing, caching, direction mapping, sequence construction,
