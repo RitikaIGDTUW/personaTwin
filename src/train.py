@@ -56,8 +56,25 @@ def load_sequence_artifact(dataset: str) -> dict:
     return torch.load(cache_path, map_location="cpu", weights_only=False)
 
 
-def make_loader(split: dict, batch_size: int, shuffle: bool) -> DataLoader:
-    dataset = TensorDataset(split["X"].float(), split["y"].float())
+def target_statistics(split: dict) -> tuple[torch.Tensor, torch.Tensor]:
+    """Compute target scaling statistics from the training split only."""
+    targets = split["y"].float()
+    mean = targets.mean(dim=0)
+    std = targets.std(dim=0).clamp_min(1e-6)
+    return mean, std
+
+
+def make_loader(
+    split: dict,
+    batch_size: int,
+    shuffle: bool,
+    target_mean: torch.Tensor | None = None,
+    target_std: torch.Tensor | None = None,
+) -> DataLoader:
+    targets = split["y"].float()
+    if target_mean is not None and target_std is not None:
+        targets = (targets - target_mean) / target_std
+    dataset = TensorDataset(split["X"].float(), targets)
     return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
 
@@ -67,6 +84,7 @@ def run_epoch(
     loss_fn: nn.Module,
     device: torch.device,
     optimizer: torch.optim.Optimizer | None = None,
+    gradient_clip: float = 1.0,
 ) -> float:
     training = optimizer is not None
     model.train(training)
@@ -82,6 +100,7 @@ def run_epoch(
         if training:
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clip)
             optimizer.step()
 
         rows = features.shape[0]
@@ -95,6 +114,8 @@ def evaluate(
     model: PopulationGRU,
     loader: DataLoader,
     device: torch.device,
+    target_mean: torch.Tensor | None = None,
+    target_std: torch.Tensor | None = None,
 ) -> dict[str, float]:
     model.eval()
     predictions = []
@@ -109,6 +130,9 @@ def evaluate(
 
     predicted = torch.cat(predictions)
     observed = torch.cat(targets)
+    if target_mean is not None and target_std is not None:
+        predicted = predicted * target_std + target_mean
+        observed = observed * target_std + target_mean
     error = predicted - observed
     mse = torch.mean(error.square()).item()
     return {
@@ -133,6 +157,8 @@ def make_personalized_loader(
     index: dict[str, int],
     batch_size: int,
     shuffle: bool,
+    target_mean: torch.Tensor | None = None,
+    target_std: torch.Tensor | None = None,
 ) -> DataLoader:
     """Build batches containing features, targets, and participant indices."""
     values = split["uid"]
@@ -141,9 +167,12 @@ def make_personalized_loader(
         [index[str(value)] for value in values],
         dtype=torch.long,
     )
+    targets = split["y"].float()
+    if target_mean is not None and target_std is not None:
+        targets = (targets - target_mean) / target_std
     dataset = TensorDataset(
         split["X"].float(),
-        split["y"].float(),
+        targets,
         participant_ids,
     )
     return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
@@ -155,6 +184,7 @@ def run_personalized_epoch(
     loss_fn: nn.Module,
     device: torch.device,
     optimizer: torch.optim.Optimizer | None = None,
+    gradient_clip: float = 1.0,
 ) -> float:
     training = optimizer is not None
     model.train(training)
@@ -169,6 +199,7 @@ def run_personalized_epoch(
         if training:
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clip)
             optimizer.step()
         rows = features.shape[0]
         total_loss += loss.item() * rows
@@ -180,6 +211,8 @@ def evaluate_personalized(
     model: PersonalizedGRU,
     loader: DataLoader,
     device: torch.device,
+    target_mean: torch.Tensor | None = None,
+    target_std: torch.Tensor | None = None,
 ) -> dict[str, float]:
     model.eval()
     predictions = []
@@ -197,6 +230,9 @@ def evaluate_personalized(
         return {"mse": float("nan"), "mae": float("nan"), "rmse": float("nan")}
     predicted = torch.cat(predictions)
     observed = torch.cat(targets)
+    if target_mean is not None and target_std is not None:
+        predicted = predicted * target_std + target_mean
+        observed = observed * target_std + target_mean
     error = predicted - observed
     mse = torch.mean(error.square()).item()
     return {
@@ -223,6 +259,7 @@ def train(
     metadata = artifact.get("metadata", {})
     feature_count = artifact["train"]["X"].shape[-1]
     target_count = artifact["train"]["y"].shape[-1]
+    target_mean, target_std = target_statistics(artifact["train"])
 
     train_split = artifact["train"]
     if max_train_windows is not None:
@@ -233,16 +270,44 @@ def train(
             if torch.is_tensor(value) and value.ndim > 0
         }
 
-    train_loader = make_loader(train_split, batch_size, shuffle=True)
-    val_loader = make_loader(artifact["val"], batch_size, shuffle=False)
-    test_loader = make_loader(artifact["test"], batch_size, shuffle=False)
+    train_loader = make_loader(
+        train_split,
+        batch_size,
+        shuffle=True,
+        target_mean=target_mean,
+        target_std=target_std,
+    )
+    val_loader = make_loader(
+        artifact["val"],
+        batch_size,
+        shuffle=False,
+        target_mean=target_mean,
+        target_std=target_std,
+    )
+    test_loader = make_loader(
+        artifact["test"],
+        batch_size,
+        shuffle=False,
+        target_mean=target_mean,
+        target_std=target_std,
+    )
 
     model = PopulationGRU(
         input_size=feature_count,
         hidden_size=hidden_size,
         output_size=target_count,
     ).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=learning_rate,
+        weight_decay=1e-4,
+    )
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="min",
+        factor=0.5,
+        patience=2,
+    )
     loss_fn = nn.MSELoss()
 
     best_val = float("inf")
@@ -269,6 +334,7 @@ def train(
                 optimizer,
             )
             val_loss = run_epoch(model, val_loader, loss_fn, device)
+            scheduler.step(val_loss)
             writer.writerow(
                 {
                     "epoch": epoch,
@@ -298,7 +364,13 @@ def train(
     if best_state is None:
         raise RuntimeError("Training produced no checkpoint state")
     model.load_state_dict(best_state)
-    test_metrics = evaluate(model, test_loader, device)
+    test_metrics = evaluate(
+        model,
+        test_loader,
+        device,
+        target_mean=target_mean,
+        target_std=target_std,
+    )
     torch.save(
         {
             "model_state": model.state_dict(),
@@ -306,6 +378,8 @@ def train(
             "feature_count": feature_count,
             "target_names": metadata.get("target_names", []),
             "hidden_size": hidden_size,
+            "target_mean": target_mean,
+            "target_std": target_std,
             "best_val_loss": best_val,
             "test_metrics": test_metrics,
         },
@@ -335,6 +409,7 @@ def train_personalized(
     metadata = artifact.get("metadata", {})
     feature_count = artifact["train"]["X"].shape[-1]
     target_count = artifact["train"]["y"].shape[-1]
+    target_mean, target_std = target_statistics(artifact["train"])
     index = participant_index(artifact)
 
     train_split = artifact["train"]
@@ -351,18 +426,24 @@ def train_personalized(
         index,
         batch_size,
         shuffle=True,
+        target_mean=target_mean,
+        target_std=target_std,
     )
     val_loader = make_personalized_loader(
         artifact["val"],
         index,
         batch_size,
         shuffle=False,
+        target_mean=target_mean,
+        target_std=target_std,
     )
     test_loader = make_personalized_loader(
         artifact["test"],
         index,
         batch_size,
         shuffle=False,
+        target_mean=target_mean,
+        target_std=target_std,
     )
 
     model = PersonalizedGRU(
@@ -372,7 +453,17 @@ def train_personalized(
         embedding_size=embedding_size,
         output_size=target_count,
     ).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=learning_rate,
+        weight_decay=1e-4,
+    )
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="min",
+        factor=0.5,
+        patience=2,
+    )
     loss_fn = nn.MSELoss()
     best_val = float("inf")
     best_state = None
@@ -406,6 +497,7 @@ def train_personalized(
                 loss_fn,
                 device,
             )
+            scheduler.step(val_loss)
             writer.writerow(
                 {
                     "epoch": epoch,
@@ -434,7 +526,13 @@ def train_personalized(
     if best_state is None:
         raise RuntimeError("Personalized training produced no checkpoint state")
     model.load_state_dict(best_state)
-    test_metrics = evaluate_personalized(model, test_loader, device)
+    test_metrics = evaluate_personalized(
+        model,
+        test_loader,
+        device,
+        target_mean=target_mean,
+        target_std=target_std,
+    )
     torch.save(
         {
             "model_state": model.state_dict(),
@@ -443,6 +541,8 @@ def train_personalized(
             "target_names": metadata.get("target_names", []),
             "hidden_size": hidden_size,
             "embedding_size": embedding_size,
+            "target_mean": target_mean,
+            "target_std": target_std,
             "participant_index": index,
             "best_val_loss": best_val,
             "test_metrics": test_metrics,

@@ -168,6 +168,11 @@ The trainer automatically uses CUDA with `--device auto` when available. It
 writes training history to `data/processed/logs/` and the best checkpoint to
 `data/processed/checkpoints/`. These generated files are ignored by Git.
 
+Training uses target mean/std computed from the training split only. Loss is
+optimized on the standardized target, while reported MSE, MAE, and RMSE are
+converted back to the original PAM scale. AdamW, validation-based learning
+rate reduction, and gradient clipping are enabled for stability.
+
 ## Train the Personalized GRU
 
 After the population baseline has been trained, compare the participant-
