@@ -260,6 +260,17 @@ predictive standard deviation, and empirical 68%/95% interval coverage. A
 model should beat the mean baseline, and nominal coverage should be checked
 before interpreting sensitivity profiles.
 
+For StudentLife, use the hybrid uncertainty loss to prioritize mean prediction
+while retaining the variance head:
+
+```powershell
+python -m src.train studentlife --model uncertainty --device cuda --epochs 30 --batch-size 128 --mean-loss-weight 0.5 --result-tag hybrid_seed42
+```
+
+Then rerun `audit_pre_sensitivity` on the new checkpoint. The required result
+is model RMSE below the mean-baseline RMSE, followed by a separate check that
+the 68% and 95% interval coverage is reasonable.
+
 ## Repository Contents
 
 - `src/`: preprocessing, caching, direction mapping, sequence construction,

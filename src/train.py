@@ -258,12 +258,25 @@ def gaussian_nll(
     ).mean()
 
 
+def uncertainty_loss(
+    mean: torch.Tensor,
+    logvar: torch.Tensor,
+    targets: torch.Tensor,
+    mean_loss_weight: float,
+) -> torch.Tensor:
+    """Combine Gaussian NLL with a direct mean-prediction loss."""
+    nll = gaussian_nll(mean, logvar, targets)
+    mean_loss = torch.mean((targets - mean).square())
+    return nll + mean_loss_weight * mean_loss
+
+
 def run_uncertainty_epoch(
     model: UncertaintyPopulationGRU | UncertaintyPersonalizedGRU,
     loader: DataLoader,
     device: torch.device,
     personalized: bool,
     optimizer: torch.optim.Optimizer | None = None,
+    mean_loss_weight: float = 0.25,
 ) -> float:
     training = optimizer is not None
     model.train(training)
@@ -276,7 +289,7 @@ def run_uncertainty_epoch(
             mean, logvar = model(features, batch[2].to(device))
         else:
             mean, logvar = model(features)
-        loss = gaussian_nll(mean, logvar, targets)
+        loss = uncertainty_loss(mean, logvar, targets, mean_loss_weight)
         if training:
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
@@ -673,6 +686,7 @@ def train_uncertainty(
     seed: int = 42,
     max_train_windows: int | None = None,
     result_tag: str | None = None,
+    mean_loss_weight: float = 0.25,
 ) -> dict[str, float]:
     """Train an uncertainty-aware population or personalized GRU."""
     set_seed(seed)
@@ -738,8 +752,12 @@ def train_uncertainty(
         writer.writeheader()
         print(f"dataset={dataset} model={suffix} device={device} features={feature_count}")
         for epoch in range(1, epochs + 1):
-            train_nll = run_uncertainty_epoch(model, train_loader, device, personalized, optimizer)
-            val_nll = run_uncertainty_epoch(model, val_loader, device, personalized)
+            train_nll = run_uncertainty_epoch(
+                model, train_loader, device, personalized, optimizer, mean_loss_weight
+            )
+            val_nll = run_uncertainty_epoch(
+                model, val_loader, device, personalized, None, mean_loss_weight
+            )
             scheduler.step(val_nll)
             writer.writerow({"epoch": epoch, "train_nll": train_nll, "val_nll": val_nll})
             log_file.flush()
@@ -774,6 +792,7 @@ def train_uncertainty(
             "target_std": target_std,
             "participant_index": index,
             "best_val_nll": best_val,
+            "mean_loss_weight": mean_loss_weight,
             "test_metrics": test_metrics,
         },
         checkpoint_path,
@@ -802,6 +821,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-train-windows", type=int, default=None)
     parser.add_argument("--result-tag", default=None)
+    parser.add_argument("--mean-loss-weight", type=float, default=0.25)
     args = parser.parse_args()
     arguments = vars(args)
     model_type = arguments.pop("model")
