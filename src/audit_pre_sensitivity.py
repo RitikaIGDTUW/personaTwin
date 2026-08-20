@@ -159,11 +159,13 @@ def deterministic_calibrated_audit(
     model.eval()
 
     validation_mean = _deterministic_predictions(model, artifact["val"], index)
+    validation_mean = validation_mean * target_std + target_mean
     validation_observed = artifact["val"]["y"].float()
     validation_residual = validation_observed - validation_mean
     calibrated_std = validation_residual.std(dim=0).clamp_min(1e-6)
 
     test_mean = _deterministic_predictions(model, artifact["test"], index)
+    test_mean = test_mean * target_std + target_mean
     test_observed = artifact["test"]["y"].float()
     error = test_mean - test_observed
     result = {
