@@ -201,6 +201,19 @@ python -m src.train studentlife --model personalized --device cpu --epochs 1 --m
 python -m src.train ces --model personalized --device cpu --epochs 1 --max-train-windows 8
 ```
 
+For CES, the high-dimensional input can be compressed and regularized before
+the GRU. This is the recommended comparison configuration; it does not change
+the cached data or StudentLife defaults:
+
+```powershell
+python -m src.train ces --device cuda --epochs 30 --batch-size 128 --hidden-size 128 --projection-size 128 --dropout 0.25
+python -m src.train ces --model personalized --device cuda --epochs 30 --batch-size 128 --hidden-size 128 --projection-size 128 --dropout 0.25
+```
+
+Compare these CES runs against the existing 570-input configuration using the
+same seeds. Keep the lower validation-loss checkpoint and report test metrics
+only after selecting the configuration on validation data.
+
 ## Repository Contents
 
 - `src/`: preprocessing, caching, direction mapping, sequence construction,

@@ -247,6 +247,8 @@ def train(
     epochs: int = 30,
     batch_size: int = 128,
     hidden_size: int = 64,
+    projection_size: int | None = None,
+    dropout: float = 0.0,
     learning_rate: float = 1e-3,
     patience: int = 7,
     device: str = "auto",
@@ -295,6 +297,8 @@ def train(
     model = PopulationGRU(
         input_size=feature_count,
         hidden_size=hidden_size,
+        projection_size=projection_size,
+        dropout=dropout,
         output_size=target_count,
     ).to(device)
     optimizer = torch.optim.AdamW(
@@ -378,6 +382,8 @@ def train(
             "feature_count": feature_count,
             "target_names": metadata.get("target_names", []),
             "hidden_size": hidden_size,
+            "projection_size": projection_size,
+            "dropout": dropout,
             "target_mean": target_mean,
             "target_std": target_std,
             "best_val_loss": best_val,
@@ -396,6 +402,8 @@ def train_personalized(
     batch_size: int = 128,
     hidden_size: int = 64,
     embedding_size: int = 16,
+    projection_size: int | None = None,
+    dropout: float = 0.0,
     learning_rate: float = 1e-3,
     patience: int = 7,
     device: str = "auto",
@@ -451,6 +459,8 @@ def train_personalized(
         num_participants=len(index),
         hidden_size=hidden_size,
         embedding_size=embedding_size,
+        projection_size=projection_size,
+        dropout=dropout,
         output_size=target_count,
     ).to(device)
     optimizer = torch.optim.AdamW(
@@ -541,6 +551,8 @@ def train_personalized(
             "target_names": metadata.get("target_names", []),
             "hidden_size": hidden_size,
             "embedding_size": embedding_size,
+            "projection_size": projection_size,
+            "dropout": dropout,
             "target_mean": target_mean,
             "target_std": target_std,
             "participant_index": index,
@@ -565,6 +577,8 @@ def main() -> None:
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--hidden-size", type=int, default=64)
+    parser.add_argument("--projection-size", type=int, default=None)
+    parser.add_argument("--dropout", type=float, default=0.0)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--patience", type=int, default=7)
     parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
