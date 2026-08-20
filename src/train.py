@@ -23,7 +23,7 @@ from src.config import (
     MODEL_LOG_DIR,
     STUDENTLIFE_SEQUENCES_CACHE,
 )
-from src.model import PopulationGRU
+from src.model import PersonalizedGRU, PopulationGRU
 
 
 def set_seed(seed: int) -> None:
@@ -107,6 +107,94 @@ def evaluate(
     if not predictions:
         return {"mse": float("nan"), "mae": float("nan"), "rmse": float("nan")}
 
+    predicted = torch.cat(predictions)
+    observed = torch.cat(targets)
+    error = predicted - observed
+    mse = torch.mean(error.square()).item()
+    return {
+        "mse": mse,
+        "mae": torch.mean(error.abs()).item(),
+        "rmse": float(np.sqrt(mse)),
+    }
+
+
+def participant_index(artifact: dict) -> dict[str, int]:
+    """Create a stable participant-to-embedding index across all splits."""
+    identifiers = []
+    for split_name in ("train", "val", "test"):
+        values = artifact[split_name]["uid"]
+        values = values.tolist() if torch.is_tensor(values) else values
+        identifiers.extend(str(value) for value in values)
+    return {identifier: index for index, identifier in enumerate(sorted(set(identifiers)))}
+
+
+def make_personalized_loader(
+    split: dict,
+    index: dict[str, int],
+    batch_size: int,
+    shuffle: bool,
+) -> DataLoader:
+    """Build batches containing features, targets, and participant indices."""
+    values = split["uid"]
+    values = values.tolist() if torch.is_tensor(values) else values
+    participant_ids = torch.tensor(
+        [index[str(value)] for value in values],
+        dtype=torch.long,
+    )
+    dataset = TensorDataset(
+        split["X"].float(),
+        split["y"].float(),
+        participant_ids,
+    )
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
+
+def run_personalized_epoch(
+    model: PersonalizedGRU,
+    loader: DataLoader,
+    loss_fn: nn.Module,
+    device: torch.device,
+    optimizer: torch.optim.Optimizer | None = None,
+) -> float:
+    training = optimizer is not None
+    model.train(training)
+    total_loss = 0.0
+    total_rows = 0
+    for features, targets, participants in loader:
+        features = features.to(device)
+        targets = targets.to(device)
+        participants = participants.to(device)
+        predictions = model(features, participants)
+        loss = loss_fn(predictions, targets)
+        if training:
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+        rows = features.shape[0]
+        total_loss += loss.item() * rows
+        total_rows += rows
+    return total_loss / max(total_rows, 1)
+
+
+def evaluate_personalized(
+    model: PersonalizedGRU,
+    loader: DataLoader,
+    device: torch.device,
+) -> dict[str, float]:
+    model.eval()
+    predictions = []
+    targets = []
+    with torch.no_grad():
+        for features, target, participants in loader:
+            predictions.append(
+                model(
+                    features.to(device),
+                    participants.to(device),
+                ).cpu()
+            )
+            targets.append(target)
+    if not predictions:
+        return {"mse": float("nan"), "mae": float("nan"), "rmse": float("nan")}
     predicted = torch.cat(predictions)
     observed = torch.cat(targets)
     error = predicted - observed
@@ -228,9 +316,152 @@ def train(
     return test_metrics
 
 
+def train_personalized(
+    dataset: str,
+    epochs: int = 30,
+    batch_size: int = 128,
+    hidden_size: int = 64,
+    embedding_size: int = 16,
+    learning_rate: float = 1e-3,
+    patience: int = 7,
+    device: str = "auto",
+    seed: int = 42,
+    max_train_windows: int | None = None,
+) -> dict[str, float]:
+    """Train the participant-embedding GRU using the same split as baseline."""
+    set_seed(seed)
+    device = resolve_device(device)
+    artifact = load_sequence_artifact(dataset)
+    metadata = artifact.get("metadata", {})
+    feature_count = artifact["train"]["X"].shape[-1]
+    target_count = artifact["train"]["y"].shape[-1]
+    index = participant_index(artifact)
+
+    train_split = artifact["train"]
+    if max_train_windows is not None:
+        limit = min(max_train_windows, len(train_split["X"]))
+        train_split = {
+            key: value[:limit]
+            for key, value in train_split.items()
+            if key == "uid"
+            or (torch.is_tensor(value) and value.ndim > 0)
+        }
+    train_loader = make_personalized_loader(
+        train_split,
+        index,
+        batch_size,
+        shuffle=True,
+    )
+    val_loader = make_personalized_loader(
+        artifact["val"],
+        index,
+        batch_size,
+        shuffle=False,
+    )
+    test_loader = make_personalized_loader(
+        artifact["test"],
+        index,
+        batch_size,
+        shuffle=False,
+    )
+
+    model = PersonalizedGRU(
+        input_size=feature_count,
+        num_participants=len(index),
+        hidden_size=hidden_size,
+        embedding_size=embedding_size,
+        output_size=target_count,
+    ).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    loss_fn = nn.MSELoss()
+    best_val = float("inf")
+    best_state = None
+    stale_epochs = 0
+    log_path = MODEL_LOG_DIR / f"{dataset}_personalized_gru.csv"
+    checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_personalized_gru.pt"
+
+    with log_path.open("w", newline="") as log_file:
+        writer = csv.DictWriter(
+            log_file,
+            fieldnames=["epoch", "train_loss", "val_loss"],
+        )
+        writer.writeheader()
+        print(
+            f"dataset={dataset} model=personalized_gru "
+            f"device={device} features={feature_count} "
+            f"participants={len(index)}"
+        )
+        print(f"targets={metadata.get('target_names', target_count)}")
+        for epoch in range(1, epochs + 1):
+            train_loss = run_personalized_epoch(
+                model,
+                train_loader,
+                loss_fn,
+                device,
+                optimizer,
+            )
+            val_loss = run_personalized_epoch(
+                model,
+                val_loader,
+                loss_fn,
+                device,
+            )
+            writer.writerow(
+                {
+                    "epoch": epoch,
+                    "train_loss": train_loss,
+                    "val_loss": val_loss,
+                }
+            )
+            log_file.flush()
+            print(
+                f"epoch={epoch:03d} train_loss={train_loss:.6f} "
+                f"val_loss={val_loss:.6f}"
+            )
+            if val_loss < best_val:
+                best_val = val_loss
+                best_state = {
+                    key: value.detach().cpu().clone()
+                    for key, value in model.state_dict().items()
+                }
+                stale_epochs = 0
+            else:
+                stale_epochs += 1
+                if stale_epochs >= patience:
+                    print(f"early stopping at epoch {epoch}")
+                    break
+
+    if best_state is None:
+        raise RuntimeError("Personalized training produced no checkpoint state")
+    model.load_state_dict(best_state)
+    test_metrics = evaluate_personalized(model, test_loader, device)
+    torch.save(
+        {
+            "model_state": model.state_dict(),
+            "dataset": dataset,
+            "feature_count": feature_count,
+            "target_names": metadata.get("target_names", []),
+            "hidden_size": hidden_size,
+            "embedding_size": embedding_size,
+            "participant_index": index,
+            "best_val_loss": best_val,
+            "test_metrics": test_metrics,
+        },
+        checkpoint_path,
+    )
+    print(f"checkpoint={checkpoint_path}")
+    print(f"test_metrics={test_metrics}")
+    return test_metrics
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset", choices=["studentlife", "ces"])
+    parser.add_argument(
+        "--model",
+        choices=["population", "personalized"],
+        default="population",
+    )
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--hidden-size", type=int, default=64)
@@ -240,7 +471,12 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-train-windows", type=int, default=None)
     args = parser.parse_args()
-    train(**vars(args))
+    arguments = vars(args)
+    model_type = arguments.pop("model")
+    if model_type == "personalized":
+        train_personalized(**arguments)
+    else:
+        train(**arguments)
 
 
 if __name__ == "__main__":

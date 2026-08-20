@@ -168,6 +168,34 @@ The trainer automatically uses CUDA with `--device auto` when available. It
 writes training history to `data/processed/logs/` and the best checkpoint to
 `data/processed/checkpoints/`. These generated files are ignored by Git.
 
+## Train the Personalized GRU
+
+After the population baseline has been trained, compare the participant-
+embedding model on the same sequence caches:
+
+```powershell
+python -m src.train studentlife --model personalized --device cuda --epochs 30 --batch-size 128
+python -m src.train ces --model personalized --device cuda --epochs 30 --batch-size 128
+```
+
+The personalized model uses a shared GRU plus a learned embedding for each
+participant. It is a predictive personalization experiment, not a causal
+intervention model. Results are saved separately:
+
+```text
+data/processed/checkpoints/studentlife_personalized_gru.pt
+data/processed/checkpoints/ces_personalized_gru.pt
+data/processed/logs/studentlife_personalized_gru.csv
+data/processed/logs/ces_personalized_gru.csv
+```
+
+For local smoke tests:
+
+```powershell
+python -m src.train studentlife --model personalized --device cpu --epochs 1 --max-train-windows 64
+python -m src.train ces --model personalized --device cpu --epochs 1 --max-train-windows 8
+```
+
 ## Repository Contents
 
 - `src/`: preprocessing, caching, direction mapping, sequence construction,
