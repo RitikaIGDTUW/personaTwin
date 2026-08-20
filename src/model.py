@@ -83,3 +83,45 @@ class PersonalizedGRU(PopulationGRU):
         personal_state = self.participant_embedding(participant)
         combined = torch.cat([temporal_state, personal_state], dim=-1)
         return self.head(self.personal_dropout(combined))
+
+
+class UncertaintyPopulationGRU(PopulationGRU):
+    """Population GRU with separate predictive mean and log-variance heads."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        output_size = self.head.out_features
+        hidden_size = self.head.in_features
+        self.mean_head = nn.Linear(hidden_size, output_size)
+        self.logvar_head = nn.Linear(hidden_size, output_size)
+        del self.head
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        representation = self.head_dropout(self.encode(x))
+        mean = self.mean_head(representation)
+        logvar = self.logvar_head(representation).clamp(-8.0, 8.0)
+        return mean, logvar
+
+
+class UncertaintyPersonalizedGRU(PersonalizedGRU):
+    """Personalized GRU with predictive mean and log-variance heads."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        output_size = self.head.out_features
+        hidden_size = self.head.in_features - self.participant_embedding.embedding_dim
+        self.mean_head = nn.Linear(hidden_size + self.participant_embedding.embedding_dim, output_size)
+        self.logvar_head = nn.Linear(hidden_size + self.participant_embedding.embedding_dim, output_size)
+        del self.head
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        participant: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        temporal_state = self.encode(x)
+        personal_state = self.participant_embedding(participant)
+        combined = self.personal_dropout(torch.cat([temporal_state, personal_state], dim=-1))
+        mean = self.mean_head(combined)
+        logvar = self.logvar_head(combined).clamp(-8.0, 8.0)
+        return mean, logvar

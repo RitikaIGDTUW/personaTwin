@@ -214,6 +214,33 @@ Compare these CES runs against the existing 570-input configuration using the
 same seeds. Keep the lower validation-loss checkpoint and report test metrics
 only after selecting the configuration on validation data.
 
+## Train the Uncertainty-Aware Models
+
+The uncertainty stage predicts both a PAM mean and a Gaussian predictive
+variance. The reported `mse`, `mae`, and `rmse` remain on the original PAM
+scale; `nll` is the standardized Gaussian negative log-likelihood and
+`mean_std` is the average predictive standard deviation in PAM units.
+
+StudentLife:
+
+```powershell
+python -m src.train studentlife --model uncertainty --device cuda --epochs 30 --batch-size 128
+python -m src.train studentlife --model uncertainty_personalized --device cuda --epochs 30 --batch-size 128
+```
+
+CES with the improved projection/dropout configuration:
+
+```powershell
+python -m src.train ces --model uncertainty --device cuda --epochs 30 --batch-size 128 --hidden-size 128 --projection-size 128 --dropout 0.25
+python -m src.train ces --model uncertainty_personalized --device cuda --epochs 30 --batch-size 128 --hidden-size 128 --projection-size 128 --dropout 0.25
+```
+
+Uncertainty checkpoints are saved under:
+
+```text
+data/processed/checkpoints/*uncertainty*.pt
+```
+
 ## Repository Contents
 
 - `src/`: preprocessing, caching, direction mapping, sequence construction,
