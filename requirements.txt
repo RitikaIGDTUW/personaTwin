@@ -1,0 +1,7 @@
+pandas
+numpy
+pyreadr
+pyarrow
+torch
+scikit-learn
+jupyter

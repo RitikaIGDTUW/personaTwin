@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local secrets and editor files
+.env
+.vscode/
+
+# Raw, interim, and generated data
+# Raw datasets and caches are large and may contain sensitive research data.
+data/raw/
+data/interim/
+data/processed/
+
+# Notebook/runtime artifacts
+.ipynb_checkpoints/
+*.log
