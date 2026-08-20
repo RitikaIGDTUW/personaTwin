@@ -241,6 +241,25 @@ Uncertainty checkpoints are saved under:
 data/processed/checkpoints/*uncertainty*.pt
 ```
 
+## Pre-Sensitivity Audit
+
+Before using the Sensitivity Engine, compare the uncertainty model against a
+test-set prediction of the training PAM mean and inspect empirical interval
+coverage. Run this only with full-training checkpoints, not one-epoch smoke
+checkpoints:
+
+```powershell
+python -m src.audit_pre_sensitivity studentlife --checkpoint data/processed/checkpoints/studentlife_uncertainty_population_gru.pt
+python -m src.audit_pre_sensitivity studentlife --checkpoint data/processed/checkpoints/studentlife_uncertainty_personalized_gru.pt --personalized
+python -m src.audit_pre_sensitivity ces --checkpoint data/processed/checkpoints/ces_uncertainty_population_gru.pt
+python -m src.audit_pre_sensitivity ces --checkpoint data/processed/checkpoints/ces_uncertainty_personalized_gru.pt --personalized
+```
+
+The audit reports model MSE/MAE/RMSE, mean-baseline metrics, average
+predictive standard deviation, and empirical 68%/95% interval coverage. A
+model should beat the mean baseline, and nominal coverage should be checked
+before interpreting sensitivity profiles.
+
 ## Repository Contents
 
 - `src/`: preprocessing, caching, direction mapping, sequence construction,

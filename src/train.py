@@ -342,6 +342,7 @@ def train(
     device: str = "auto",
     seed: int = 42,
     max_train_windows: int | None = None,
+    result_tag: str | None = None,
 ) -> dict[str, float]:
     set_seed(seed)
     device = resolve_device(device)
@@ -405,8 +406,9 @@ def train(
     best_val = float("inf")
     best_state = None
     stale_epochs = 0
-    log_path = MODEL_LOG_DIR / f"{dataset}_population_gru.csv"
-    checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_population_gru.pt"
+    suffix = f"_{result_tag}" if result_tag else ""
+    log_path = MODEL_LOG_DIR / f"{dataset}_population_gru{suffix}.csv"
+    checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_population_gru{suffix}.pt"
 
     with log_path.open("w", newline="") as log_file:
         writer = csv.DictWriter(
@@ -497,6 +499,7 @@ def train_personalized(
     device: str = "auto",
     seed: int = 42,
     max_train_windows: int | None = None,
+    result_tag: str | None = None,
 ) -> dict[str, float]:
     """Train the participant-embedding GRU using the same split as baseline."""
     set_seed(seed)
@@ -566,8 +569,9 @@ def train_personalized(
     best_val = float("inf")
     best_state = None
     stale_epochs = 0
-    log_path = MODEL_LOG_DIR / f"{dataset}_personalized_gru.csv"
-    checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_personalized_gru.pt"
+    suffix = f"_{result_tag}" if result_tag else ""
+    log_path = MODEL_LOG_DIR / f"{dataset}_personalized_gru{suffix}.csv"
+    checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_personalized_gru{suffix}.pt"
 
     with log_path.open("w", newline="") as log_file:
         writer = csv.DictWriter(
@@ -668,6 +672,7 @@ def train_uncertainty(
     device: str = "auto",
     seed: int = 42,
     max_train_windows: int | None = None,
+    result_tag: str | None = None,
 ) -> dict[str, float]:
     """Train an uncertainty-aware population or personalized GRU."""
     set_seed(seed)
@@ -724,8 +729,9 @@ def train_uncertainty(
     best_val = float("inf")
     best_state = None
     stale_epochs = 0
-    log_path = MODEL_LOG_DIR / f"{dataset}_{suffix}.csv"
-    checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_{suffix}.pt"
+    result_suffix = f"_{result_tag}" if result_tag else ""
+    log_path = MODEL_LOG_DIR / f"{dataset}_{suffix}{result_suffix}.csv"
+    checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_{suffix}{result_suffix}.pt"
 
     with log_path.open("w", newline="") as log_file:
         writer = csv.DictWriter(log_file, fieldnames=["epoch", "train_nll", "val_nll"])
@@ -795,6 +801,7 @@ def main() -> None:
     parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-train-windows", type=int, default=None)
+    parser.add_argument("--result-tag", default=None)
     args = parser.parse_args()
     arguments = vars(args)
     model_type = arguments.pop("model")
