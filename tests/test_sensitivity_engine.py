@@ -167,3 +167,30 @@ def test_probe_returns_one_result_per_alpha_with_batched_forward():
 
     assert [item["alpha"] for item in response] == [-1.0, 0.0, 1.0]
     assert response[0]["predicted_mean"] < response[-1]["predicted_mean"]
+
+
+def test_export_profiles_writes_csv_and_json(tmp_path):
+    import json
+
+    from src.sensitivity import export_profiles
+
+    rows = [{
+        "window_index": 0,
+        "uid": "p1",
+        "direction": "activity",
+        "slope": 1.0,
+        "curvature": 0.1,
+        "margin": None,
+    }]
+    aggregates = {
+        "activity": {
+            "count": 1.0,
+            "slope_mean": 1.0,
+            "margin_mean": float("nan"),
+        }
+    }
+    rows_path, aggregates_path = export_profiles(rows, aggregates, tmp_path)
+
+    assert rows_path.exists()
+    assert aggregates_path.exists()
+    assert json.loads(aggregates_path.read_text())["activity"]["margin_mean"] is None

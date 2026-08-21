@@ -7,7 +7,10 @@ makes the resulting slope/curvature/margin diagnostics defensible.
 
 from __future__ import annotations
 
+import csv
+import json
 from collections.abc import Sequence
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -391,3 +394,42 @@ def aggregate_profiles(rows: Sequence[dict[str, object]]) -> dict[str, dict[str,
                 summary[f"{metric}_std"] = float("nan")
         aggregates[direction] = summary
     return aggregates
+
+
+def export_profiles(
+    rows: Sequence[dict[str, object]],
+    aggregates: dict[str, dict[str, float]],
+    output_dir: str | Path,
+) -> tuple[Path, Path]:
+    """Save per-window profiles and aggregate summaries as CSV and JSON."""
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    rows_path = output_path / "ces_sensitivity_profiles.csv"
+    aggregates_path = output_path / "ces_sensitivity_aggregates.json"
+
+    with rows_path.open("w", newline="") as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=[
+                "window_index",
+                "uid",
+                "direction",
+                "slope",
+                "curvature",
+                "margin",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+
+    serializable = {
+        direction: {
+            key: (None if not np.isfinite(value) else value)
+            for key, value in summary.items()
+        }
+        for direction, summary in aggregates.items()
+    }
+    with aggregates_path.open("w") as file:
+        json.dump(serializable, file, indent=2, allow_nan=False)
+
+    return rows_path, aggregates_path
