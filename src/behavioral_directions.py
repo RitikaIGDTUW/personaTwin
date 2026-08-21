@@ -12,7 +12,7 @@ from src.config import (
 
 _DIRECTION_KEYWORDS = {
     "sleep": ("sleep", "dark", "night"),
-    "activity": ("activity", "steps", "still", "walking", "running"),
+    "activity": ("activity", "steps", "walking", "running"),
     "social": ("conversation", "social", "call", "sms"),
     "mobility": ("gps", "location", "distance", "cluster"),
     "screen": ("phonelock", "screen", "unlock", "app"),
@@ -25,6 +25,15 @@ def _build_uncached(feature_names: list[str]) -> dict[str, list[str]]:
 
     for feature_name in feature_names:
         name = feature_name.lower()
+
+        # CES prefixes are more specific than generic words such as "still".
+        if name.startswith(("loc_", "gps_")):
+            direction_map["mobility"].append(feature_name)
+            continue
+        if name.startswith("act_"):
+            direction_map["activity"].append(feature_name)
+            continue
+
         assigned = False
         for direction in BEHAVIORAL_DIRECTIONS:
             if any(keyword in name for keyword in _DIRECTION_KEYWORDS[direction]):

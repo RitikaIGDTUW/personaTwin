@@ -1,6 +1,7 @@
 import pytest
 import torch
 
+from src.behavioral_directions import build_direction_map
 from src.sensitivity import (
     default_direction_alphas,
     direction_feature_indices,
@@ -77,3 +78,18 @@ def test_probe_rejects_direction_with_no_matching_features():
             direction="activity",
             window=torch.zeros(1, 2),
         )
+
+
+def test_ces_location_features_are_not_activity_features():
+    direction_map = build_direction_map(
+        [
+            "act_still_ep_0",
+            "quality_activity",
+            "loc_home_still",
+            "loc_food_still",
+        ],
+        force=True,
+    )
+
+    assert direction_map["activity"] == ["act_still_ep_0", "quality_activity"]
+    assert direction_map["mobility"] == ["loc_home_still", "loc_food_still"]
