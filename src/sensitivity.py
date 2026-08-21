@@ -455,47 +455,99 @@ def profile_split(
     target_mean: torch.Tensor | None = None,
     target_std: torch.Tensor | None = None,
     calibrated_std: torch.Tensor | float | None = None,
+    batch_size: int = 32,
 ) -> list[dict[str, object]]:
-    """Build one sensitivity row per direction and real window in a split."""
+    """Build one sensitivity row per direction and real window in a split.
+
+    Windows and alpha perturbations are batched together so GPU execution is
+    used efficiently instead of launching one small forward pass per window.
+    """
     if split_name not in artifact:
         raise KeyError(f"Unknown artifact split: {split_name}")
     split = artifact[split_name]
     windows = split["X"]
     limit = len(windows) if max_windows is None else min(max_windows, len(windows))
     uids = split.get("uid")
+    if batch_size <= 0:
+        raise ValueError("batch_size must be positive")
+    if device is None:
+        first_parameter = next(model.parameters(), None)
+        device = first_parameter.device if first_parameter is not None else "cpu"
+    device = torch.device(device)
     rows: list[dict[str, object]] = []
+    model.eval()
 
-    for window_index in range(limit):
-        profile = profile_all_directions(
-            model=model,
-            artifact=artifact,
-            feature_names=feature_names,
-            direction_map=direction_map,
-            window=windows[window_index],
-            threshold=threshold,
-            directions=directions,
-            alphas=alphas,
-            device=device,
-            target_mean=target_mean,
-            target_std=target_std,
-            calibrated_std=calibrated_std,
-        )
-        uid = uids[window_index].item() if torch.is_tensor(uids) else uids[window_index]
-        for direction, summary in profile.items():
-            rows.append(
-                {
-                    "window_index": window_index,
-                    "uid": str(uid),
-                    "direction": direction,
-                    "slope": None if summary is None else summary["slope"],
-                    "curvature": None if summary is None else summary["curvature"],
-                    "margin": None if summary is None else summary["margin"],
-                    "slope_ci_low": None if summary is None else summary["slope_ci_low"],
-                    "slope_ci_high": None if summary is None else summary["slope_ci_high"],
-                    "curvature_ci_low": None if summary is None else summary["curvature_ci_low"],
-                    "curvature_ci_high": None if summary is None else summary["curvature_ci_high"],
-                }
-            )
+    for direction in directions:
+        indices = direction_feature_indices(feature_names, direction_map, direction)
+        if not indices:
+            summaries = [None] * limit
+        else:
+            if alphas is None:
+                lower, upper = plausible_alpha_bounds(
+                    artifact, feature_names, direction_map, direction
+                )
+                direction_alphas = default_direction_alphas(lower, upper, steps=21)
+            else:
+                direction_alphas = [float(alpha) for alpha in alphas]
+
+            train_x = artifact["train"]["X"].float()
+            feature_sd = train_x[:, :, indices].std(
+                dim=(0, 1), unbiased=False
+            ).clamp_min(1e-6).to(device)
+            summaries = []
+            for start in range(0, limit, batch_size):
+                stop = min(start + batch_size, limit)
+                base = windows[start:stop].float().to(device)
+                alpha_tensor = torch.tensor(direction_alphas, device=device)
+                perturbed = base[:, None, :, :].expand(
+                    -1, len(direction_alphas), -1, -1
+                ).clone()
+                perturbed[:, :, :, indices] += (
+                    alpha_tensor[None, :, None, None] * feature_sd[None, None, None, :]
+                )
+                flat = perturbed.reshape(
+                    -1, perturbed.shape[2], perturbed.shape[3]
+                )
+                with torch.no_grad():
+                    prediction = model(flat)
+                mean, logvar = _coerce_prediction(
+                    prediction, target_mean, target_std
+                )
+                means = mean.reshape(stop - start, len(direction_alphas), -1)[:, :, 0]
+                std_values = None
+                if logvar is not None:
+                    predictive_std = torch.exp(0.5 * logvar)
+                    if target_std is not None:
+                        predictive_std = predictive_std * target_std
+                    std_values = predictive_std.reshape(
+                        stop - start, len(direction_alphas), -1
+                    )[:, :, 0]
+                elif calibrated_std is not None:
+                    std_values = torch.full_like(means, float(torch.as_tensor(calibrated_std)))
+                for row_index in range(stop - start):
+                    response = []
+                    for alpha_index, alpha in enumerate(direction_alphas):
+                        response.append({
+                            "alpha": alpha,
+                            "predicted_mean": float(means[row_index, alpha_index].cpu()),
+                            "predicted_std": None if std_values is None else float(std_values[row_index, alpha_index].cpu()),
+                        })
+                    summaries.append(summarize_direction_response(response, threshold))
+
+        for window_index, summary in enumerate(summaries):
+            uid = uids[window_index].item() if torch.is_tensor(uids) else uids[window_index]
+            rows.append({
+                "window_index": window_index,
+                "uid": str(uid),
+                "direction": direction,
+                "slope": None if summary is None else summary["slope"],
+                "curvature": None if summary is None else summary["curvature"],
+                "margin": None if summary is None else summary["margin"],
+                "slope_ci_low": None if summary is None else summary["slope_ci_low"],
+                "slope_ci_high": None if summary is None else summary["slope_ci_high"],
+                "curvature_ci_low": None if summary is None else summary["curvature_ci_low"],
+                "curvature_ci_high": None if summary is None else summary["curvature_ci_high"],
+            })
     return rows
 
 

@@ -141,10 +141,24 @@ def test_profile_split_and_aggregate_profiles():
         max_windows=2,
         threshold=1.0,
         alphas=[0.0, 1.0],
+        batch_size=1,
     )
     aggregate = aggregate_profiles(rows)
     assert len(rows) == 2
     assert aggregate["activity"]["slope_count"] == 2.0
+
+
+def test_profile_split_rejects_invalid_batch_size():
+    from src.sensitivity import profile_split
+
+    with pytest.raises(ValueError, match="batch_size"):
+        profile_split(
+            model=torch.nn.Linear(1, 1),
+            artifact={"train": {"X": torch.ones(1, 1, 1)}, "test": {"X": torch.ones(1, 1, 1), "uid": [1]}},
+            feature_names=["activity"],
+            direction_map={"activity": ["activity"]},
+            batch_size=0,
+        )
 
 
 def test_probe_returns_one_result_per_alpha_with_batched_forward():
