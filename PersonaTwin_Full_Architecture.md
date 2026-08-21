@@ -66,8 +66,8 @@ Sensitivity Engine design (input-space perturbation, not latent-space).
               └────────────────┬─────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────────────┐
-│ STAGE 4 — SENSITIVITY ENGINE (core contribution)   [NEXT — corrected │
-│                                                      design below]   │
+│ STAGE 4 — SENSITIVITY ENGINE (core contribution)   [DONE — results  │
+│                                                      below]          │
 │                                                                       │
 │   For a real person's real 7-day window, and one behavioral          │
 │   direction (sleep / activity / social / mobility / screen):         │
@@ -132,10 +132,59 @@ normally — every step stays in units you can explain and defend.
 
 ---
 
-## Immediate next action
+## Stage 4 empirical results
 
-Implement Stage 4 exactly as specified above (input-space perturbation,
-full forward pass, plausibility-clipped alpha range) on the CES twin
-only. Once that produces sane per-person profiles on a handful of test
-individuals, extend to StudentLife with the preliminary label carried
-through, then move to Stage 5.
+The implementation now supports real input-space perturbations, all five
+behavioral directions, per-window profiles, population aggregation, CSV/JSON
+export, and summary plots. Alpha is swept over 21 values in the plausibility
+guarded range [-2, 2]. These are model-sensitivity results, not causal
+effects.
+
+### CES (primary, calibration-ready)
+
+Results below use 100 real test windows, producing 500 profile rows
+(100 windows x 5 directions), with PAM threshold 8.0.
+
+| Direction | Mean slope | Slope SD | Mean curvature | Threshold crossings |
+|---|---:|---:|---:|---:|
+| Mobility | +0.6628 | 0.1395 | +0.3576 | 75/100 |
+| Activity | +0.3685 | 0.1854 | +0.1965 | 26/100 |
+| Screen | -0.3924 | 0.0850 | +0.1059 | 4/100 |
+| Sleep | -0.0636 | 0.0232 | +0.0036 | 2/100 |
+| Social | unavailable | unavailable | unavailable | 0/100 |
+
+CES has no features assigned to the social direction. Mobility is the
+strongest positive modeled sensitivity, activity is also positive, screen
+is negative, and sleep is nearly flat. Margins are reported only for windows
+that cross the threshold within the alpha range.
+
+### StudentLife (preliminary)
+
+Results use all 59 available test windows, producing 295 profile rows
+(59 windows x 5 directions). StudentLife has features in all five
+directions. Its uncertainty and sensitivity results remain preliminary.
+
+| Direction | Features | Mean slope | Slope SD | Mean curvature | Threshold crossings |
+|---|---:|---:|---:|---:|---:|
+| Social | 5 | +0.4287 | 0.0391 | +0.0062 | not reached |
+| Screen | 4 | +0.3203 | 0.0372 | -0.0131 | not reached |
+| Mobility | 3 | -0.2636 | 0.0218 | +0.0053 | not reached |
+| Activity | 3 | +0.0752 | 0.0263 | +0.0034 | not reached |
+| Sleep | 2 | -0.0184 | 0.0287 | -0.0004 | not reached |
+
+The StudentLife threshold was calibrated to 12.5, approximately the training
+target's 90th percentile. No direction crossed 12.5 within [-2, 2], so all
+StudentLife margins are unavailable rather than zero. This threshold should
+not be compared directly with the CES threshold of 8.0.
+
+The StudentLife ranking by absolute mean slope is social, screen, mobility,
+activity, then sleep. The near-zero sleep slope and small curvature indicate
+little modeled response to the sleep direction in this preliminary run.
+
+## Next action: Stage 5 validation
+
+- Manually inspect curves for 3-5 individuals for discontinuities or
+        physiologically implausible responses.
+- Repeat selected profiles across training seeds and compare slope rankings.
+- Confirm that the same Sensitivity Engine runs on CES and StudentLife
+        without dataset-specific code changes.
