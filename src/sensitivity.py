@@ -557,25 +557,29 @@ def _cluster_bootstrap_interval(
     n_boot: int = 1000,
     random_seed: int = 42,
 ) -> tuple[float, float]:
-    """Bootstrap a metric mean over participant-level clusters."""
+    """Bootstrap the window-weighted metric mean by participant clusters."""
     by_participant: dict[str, list[float]] = {}
     for row in rows:
         value = row.get(metric)
         if value is None or not np.isfinite(float(value)):
             continue
         by_participant.setdefault(str(row["uid"]), []).append(float(value))
-    participant_means = np.asarray(
-        [np.mean(values) for values in by_participant.values()],
-        dtype=float,
-    )
-    if not len(participant_means):
+    participant_values = list(by_participant.values())
+    if not participant_values:
         return float("nan"), float("nan")
     rng = np.random.default_rng(random_seed)
-    sampled = rng.choice(
-        participant_means,
-        size=(n_boot, len(participant_means)),
-        replace=True,
-    ).mean(axis=1)
+    sampled_means = []
+    for _ in range(n_boot):
+        sampled_participants = rng.integers(
+            0,
+            len(participant_values),
+            size=len(participant_values),
+        )
+        sampled_values = np.concatenate(
+            [participant_values[index] for index in sampled_participants]
+        )
+        sampled_means.append(float(sampled_values.mean()))
+    sampled = np.asarray(sampled_means, dtype=float)
     return float(np.percentile(sampled, 2.5)), float(np.percentile(sampled, 97.5))
 
 

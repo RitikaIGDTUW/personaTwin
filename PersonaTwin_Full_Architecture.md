@@ -135,7 +135,9 @@ normally — every step stays in units you can explain and defend.
 ## Stage 4 empirical results
 
 **Status of the numbers below:** the original exploratory tables are retained
-for provenance but are superseded. The corrected implementation now uses
+for provenance but are superseded. In particular, the previously displayed
+CES confidence intervals were invalid because their bootstrap statistic did
+not match the reported window-weighted mean. The corrected implementation now uses
 direction-specific empirical alpha ranges, uncertainty-weighted curve fits,
 bootstrap intervals, and participant-clustered population intervals. CES and
 StudentLife results must be regenerated before final reporting.
@@ -210,10 +212,11 @@ check, not proof that leakage is impossible.
 
 The corrected engine fits uncertainty-weighted quadratic curves using inverse
 predictive variance and estimates 95% intervals by bootstrap. Population
-intervals resample participant-level clusters rather than treating overlapping
-windows as independent. StudentLife deterministic/calibrated uncertainty must
-be passed explicitly before its uncertainty-weighted intervals can be called
-calibrated.
+intervals resample participant-level clusters, pool all sampled windows, and
+recompute the same window-weighted mean reported in the table rather than
+treating overlapping windows as independent. StudentLife
+deterministic/calibrated uncertainty must be passed explicitly before its
+uncertainty-weighted intervals can be called calibrated.
 
 Methodologically, this extends Individual Conditional Expectation (ICE) and
 derivative-ICE analysis (Goldstein et al., 2015) from static tabular models to

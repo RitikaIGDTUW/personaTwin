@@ -284,6 +284,21 @@ def test_uncertainty_weighted_summary_reports_bootstrap_intervals():
     assert summary["slope"] < summary["slope_ci_high"]
 
 
+def test_aggregate_bootstrap_ci_brackets_window_weighted_mean():
+    from src.sensitivity import aggregate_profiles
+
+    rows = [
+        {"uid": "p1", "direction": "activity", "slope": 1.0, "curvature": 0.0, "margin": 1.0},
+        {"uid": "p1", "direction": "activity", "slope": 1.2, "curvature": 0.0, "margin": 1.0},
+        {"uid": "p1", "direction": "activity", "slope": 0.8, "curvature": 0.0, "margin": 1.0},
+        {"uid": "p2", "direction": "activity", "slope": 2.0, "curvature": 0.0, "margin": 1.0},
+    ]
+    summary = aggregate_profiles(rows, bootstrap_samples=1000)
+
+    assert summary["activity"]["slope_ci_low"] <= summary["activity"]["slope_mean"]
+    assert summary["activity"]["slope_mean"] <= summary["activity"]["slope_ci_high"]
+
+
 def test_probe_accepts_calibrated_std_for_deterministic_models():
     from src.sensitivity import probe_direction
 
