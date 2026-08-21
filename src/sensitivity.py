@@ -370,7 +370,7 @@ def aggregate_profiles(rows: Sequence[dict[str, object]]) -> dict[str, dict[str,
     aggregates: dict[str, dict[str, float]] = {}
     for direction in directions:
         direction_rows = [row for row in rows if row["direction"] == direction]
-        summary: dict[str, float] = {"count": 0.0}
+        summary: dict[str, float] = {"count": float(len(direction_rows))}
         for metric in ("slope", "curvature", "margin"):
             values = np.asarray(
                 [
