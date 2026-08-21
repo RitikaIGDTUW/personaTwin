@@ -145,3 +145,25 @@ def test_profile_split_and_aggregate_profiles():
     aggregate = aggregate_profiles(rows)
     assert len(rows) == 2
     assert aggregate["activity"]["slope_count"] == 2.0
+
+
+def test_probe_returns_one_result_per_alpha_with_batched_forward():
+    from src.sensitivity import probe_direction
+
+    class SumModel(torch.nn.Module):
+        def forward(self, features):
+            return features.sum(dim=(1, 2)).unsqueeze(-1)
+
+    artifact = {"train": {"X": torch.ones(4, 2, 1)}}
+    response = probe_direction(
+        model=SumModel(),
+        artifact=artifact,
+        feature_names=["activity"],
+        direction_map={"activity": ["activity"]},
+        direction="activity",
+        window=torch.zeros(2, 1),
+        alphas=[-1.0, 0.0, 1.0],
+    )
+
+    assert [item["alpha"] for item in response] == [-1.0, 0.0, 1.0]
+    assert response[0]["predicted_mean"] < response[-1]["predicted_mean"]

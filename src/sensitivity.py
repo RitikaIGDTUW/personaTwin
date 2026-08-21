@@ -187,34 +187,46 @@ def probe_direction(
     results: list[dict[str, float | None]] = []
     model.eval()
     with torch.no_grad():
-        for alpha in alphas:
-            perturbed = perturb_window_for_direction(
-                window_tensor.cpu(),
-                artifact,
-                feature_names,
-                direction_map,
-                direction,
-                float(alpha),
-            ).to(device)
-            if personalized:
-                if participant_id is None:
-                    raise ValueError("participant_id is required for personalized probes")
-                prediction = model(perturbed, torch.tensor([participant_id], device=device, dtype=torch.long))
-            else:
-                prediction = model(perturbed)
-
-            mean, logvar = _coerce_prediction(prediction, target_mean, target_std)
-            mean_value = float(mean.detach().cpu().reshape(-1)[0])
-            std_value = None
-            if logvar is not None:
-                predictive_std = torch.exp(0.5 * logvar)
-                if target_std is not None:
-                    predictive_std = predictive_std * target_std
-                std_value = float(
-                    predictive_std.detach().cpu().reshape(-1)[0].item()
+        alpha_values = [float(alpha) for alpha in alphas]
+        perturbed_windows = torch.cat(
+            [
+                perturb_window_for_direction(
+                    window_tensor.cpu(),
+                    artifact,
+                    feature_names,
+                    direction_map,
+                    direction,
+                    alpha,
                 )
+                for alpha in alpha_values
+            ],
+            dim=0,
+        ).to(device)
+        if personalized:
+            if participant_id is None:
+                raise ValueError("participant_id is required for personalized probes")
+            participant = torch.tensor(
+                [participant_id] * len(alpha_values),
+                device=device,
+                dtype=torch.long,
+            )
+            prediction = model(perturbed_windows, participant)
+        else:
+            prediction = model(perturbed_windows)
+
+        mean, logvar = _coerce_prediction(prediction, target_mean, target_std)
+        means = mean.detach().cpu().reshape(len(alpha_values), -1)[:, 0]
+        stds = None
+        if logvar is not None:
+            predictive_std = torch.exp(0.5 * logvar)
+            if target_std is not None:
+                predictive_std = predictive_std * target_std
+            stds = predictive_std.detach().cpu().reshape(len(alpha_values), -1)[:, 0]
+        for index, alpha in enumerate(alpha_values):
+            mean_value = float(means[index])
+            std_value = None if stds is None else float(stds[index])
             results.append({
-                "alpha": float(alpha),
+                "alpha": alpha,
                 "predicted_mean": mean_value,
                 "predicted_std": std_value,
             })
