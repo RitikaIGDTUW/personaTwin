@@ -577,12 +577,13 @@ def export_profiles(
     rows: Sequence[dict[str, object]],
     aggregates: dict[str, dict[str, float]],
     output_dir: str | Path,
+    prefix: str = "ces",
 ) -> tuple[Path, Path]:
     """Save per-window profiles and aggregate summaries as CSV and JSON."""
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
-    rows_path = output_path / "ces_sensitivity_profiles.csv"
-    aggregates_path = output_path / "ces_sensitivity_aggregates.json"
+    rows_path = output_path / f"{prefix}_sensitivity_profiles.csv"
+    aggregates_path = output_path / f"{prefix}_sensitivity_aggregates.json"
 
     with rows_path.open("w", newline="") as file:
         writer = csv.DictWriter(
@@ -620,6 +621,7 @@ def export_profiles(
 def plot_sensitivity_results(
     aggregates: dict[str, dict[str, float]],
     output_dir: str | Path,
+    prefix: str = "ces",
 ) -> tuple[Path, Path]:
     """Save slope and threshold-crossing summary plots."""
     import matplotlib.pyplot as plt
@@ -642,7 +644,7 @@ def plot_sensitivity_results(
         for direction in available
     ]
 
-    slope_path = output_path / "ces_sensitivity_slopes.png"
+    slope_path = output_path / f"{prefix}_sensitivity_slopes.png"
     figure, axis = plt.subplots(figsize=(8, 5))
     axis.bar(available, slopes, yerr=slope_sd, capsize=4, color="#2f6690")
     axis.axhline(0.0, color="black", linewidth=0.8)
@@ -652,7 +654,7 @@ def plot_sensitivity_results(
     figure.savefig(slope_path, dpi=200)
     plt.close(figure)
 
-    crossing_path = output_path / "ces_threshold_crossing_rates.png"
+    crossing_path = output_path / f"{prefix}_threshold_crossing_rates.png"
     figure, axis = plt.subplots(figsize=(8, 5))
     axis.bar(available, crossing_rates, color="#3a7d44")
     axis.set_ylim(0.0, 1.0)

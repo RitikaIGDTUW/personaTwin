@@ -189,10 +189,16 @@ def test_export_profiles_writes_csv_and_json(tmp_path):
             "margin_mean": float("nan"),
         }
     }
-    rows_path, aggregates_path = export_profiles(rows, aggregates, tmp_path)
+    rows_path, aggregates_path = export_profiles(
+        rows,
+        aggregates,
+        tmp_path,
+        prefix="studentlife",
+    )
 
     assert rows_path.exists()
     assert aggregates_path.exists()
+    assert rows_path.name == "studentlife_sensitivity_profiles.csv"
     assert json.loads(aggregates_path.read_text())["activity"]["margin_mean"] is None
 
 
