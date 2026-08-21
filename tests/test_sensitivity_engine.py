@@ -93,3 +93,27 @@ def test_ces_location_features_are_not_activity_features():
 
     assert direction_map["activity"] == ["act_still_ep_0", "quality_activity"]
     assert direction_map["mobility"] == ["loc_home_still", "loc_food_still"]
+
+
+def test_profile_all_directions_runs_each_direction():
+    from src.sensitivity import profile_all_directions
+
+    class SumModel(torch.nn.Module):
+        def forward(self, features):
+            return features.sum(dim=(1, 2), keepdim=False).unsqueeze(-1)
+
+    feature_names = ["sleep", "activity", "social", "mobility", "screen"]
+    direction_map = {name: [name] for name in feature_names}
+    artifact = {"train": {"X": torch.ones(4, 2, 5)}}
+    profile = profile_all_directions(
+        model=SumModel(),
+        artifact=artifact,
+        feature_names=feature_names,
+        direction_map=direction_map,
+        window=torch.zeros(2, 5),
+        threshold=1.0,
+        alphas=[0.0, 1.0],
+    )
+
+    assert set(profile) == set(feature_names)
+    assert all("slope" in summary for summary in profile.values())

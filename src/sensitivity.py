@@ -172,7 +172,8 @@ def probe_direction(
         )
 
     if device is None:
-        device = next(model.parameters()).device
+        first_parameter = next(model.parameters(), None)
+        device = first_parameter.device if first_parameter is not None else "cpu"
     device = torch.device(device)
 
     if alphas is None:
@@ -206,7 +207,12 @@ def probe_direction(
             mean_value = float(mean.detach().cpu().reshape(-1)[0])
             std_value = None
             if logvar is not None:
-                std_value = float(torch.exp(0.5 * logvar).detach().cpu().reshape(-1)[0].item())
+                predictive_std = torch.exp(0.5 * logvar)
+                if target_std is not None:
+                    predictive_std = predictive_std * target_std
+                std_value = float(
+                    predictive_std.detach().cpu().reshape(-1)[0].item()
+                )
             results.append({
                 "alpha": float(alpha),
                 "predicted_mean": mean_value,
@@ -249,3 +255,46 @@ def summarize_direction_response(
         "curvature": curvature,
         "margin": float(margin),
     }
+
+
+def profile_all_directions(
+    model: torch.nn.Module,
+    artifact: dict,
+    feature_names: Sequence[str],
+    direction_map: dict[str, list[str]],
+    window: torch.Tensor | np.ndarray,
+    threshold: float,
+    directions: Sequence[str] = ("sleep", "activity", "social", "mobility", "screen"),
+    alphas: Sequence[float] | None = None,
+    device: torch.device | str | None = None,
+    target_mean: torch.Tensor | None = None,
+    target_std: torch.Tensor | None = None,
+    personalized: bool = False,
+    participant_id: int | str | None = None,
+) -> dict[str, dict[str, float] | None]:
+    """Run every available direction for one window.
+
+    A direction with no columns in the artifact is reported as ``None`` rather
+    than being treated as a no-op or causing the whole profile to fail.
+    """
+    profile = {}
+    for direction in directions:
+        if not direction_feature_indices(feature_names, direction_map, direction):
+            profile[direction] = None
+            continue
+        response = probe_direction(
+            model=model,
+            artifact=artifact,
+            feature_names=feature_names,
+            direction_map=direction_map,
+            direction=direction,
+            window=window,
+            alphas=alphas,
+            device=device,
+            target_mean=target_mean,
+            target_std=target_std,
+            personalized=personalized,
+            participant_id=participant_id,
+        )
+        profile[direction] = summarize_direction_response(response, threshold)
+    return profile
