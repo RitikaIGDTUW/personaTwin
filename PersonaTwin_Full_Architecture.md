@@ -143,8 +143,9 @@ CES confidence intervals were invalid because their bootstrap statistic did
 not match the reported window-weighted mean. The corrected implementation now
 uses direction-specific empirical alpha ranges, uncertainty-weighted curve
 fits, bootstrap intervals, and participant-clustered population intervals.
-The corrected full CES and StudentLife runs are complete; the old tables below
-remain only as provenance and must not be used for reporting.
+The corrected full CES and StudentLife runs are complete; the tables below are
+the current results for reporting. Earlier exploratory values are retained in
+git history only.
 
 The implementation supports real input-space perturbations, all five
 behavioral directions, per-window profiles, population aggregation, CSV/JSON
@@ -154,50 +155,44 @@ results, not causal effects.
 
 ### CES (primary, calibration-ready)
 
-The superseded exploratory results used 100 real test windows, producing 500
-profile rows (100 windows x 5 directions), with PAM threshold 8.0. CES has
-3,599 test windows from 202 distinct participants. Its mobility group has 118
-location-derived features, while its screen group has 56 unlock-derived
-features. These operationalizations should not be treated as equivalent to
-the corresponding StudentLife groups.
+The corrected run used all 3,599 test windows from 202 participants, producing
+17,995 profile rows (3,599 windows x 5 directions), with PAM threshold 8.0.
+The intervals below are participant-clustered bootstrap intervals for the
+same window-weighted means shown in the table.
 
-| Direction | Mean slope | Slope SD | Mean curvature | Threshold crossings |
-|---|---:|---:|---:|---:|
-| Mobility | +0.6628 | 0.1395 | +0.3576 | 75/100 |
-| Activity | +0.3685 | 0.1854 | +0.1965 | 26/100 |
-| Screen | -0.3924 | 0.0850 | +0.1059 | 4/100 |
-| Sleep | -0.0636 | 0.0232 | +0.0036 | 2/100 |
-| Social | unavailable | unavailable | unavailable | 0/100 |
+| Direction | Mean slope | 95% slope CI | Mean curvature | 95% curvature CI | Threshold crossings |
+|---|---:|---:|---:|---:|---:|
+| Activity | +0.5656 | [0.5039, 0.6233] | -0.1840 | [-0.2017, -0.1687] | 2056/3599 |
+| Mobility | +0.1632 | [0.1308, 0.1944] | -0.0120 | [-0.0138, -0.0101] | 3599/3599 |
+| Screen | -0.4781 | [-0.5001, -0.4567] | +0.1049 | [+0.0900, +0.1191] | 716/3599 |
+| Sleep | -0.0622 | [-0.0677, -0.0561] | +0.0028 | [+0.0018, +0.0039] | 667/3599 |
+| Social | unavailable | unavailable | unavailable | unavailable | unavailable |
 
-CES has no features assigned to the social direction. Mobility is the
-strongest positive modeled sensitivity, activity is also positive, screen
-is negative, and sleep is nearly flat. Margins are reported only for windows
-that cross the threshold within the alpha range.
+CES has no features assigned to the social direction. Activity and mobility
+show positive modeled sensitivity, screen and sleep show negative modeled
+sensitivity, and the intervals bracket every reported mean. Mobility crosses
+the threshold in every CES window under the empirical direction range; this
+is a model-threshold result, not a claim that mobility causally raises PAM.
 
 ### StudentLife (preliminary)
 
-The superseded exploratory results used all 59 available test windows,
-producing 295 profile rows
-(59 windows x 5 directions). StudentLife has features in all five
-directions and 23 distinct participants. Its uncertainty and sensitivity
-results remain preliminary.
+The corrected run used all 59 test windows from 23 participants, producing
+295 profile rows (59 windows x 5 directions). StudentLife uses a deterministic
+GRU with validation residual standard deviation 3.1469; its results remain
+preliminary. The PAM threshold was 12.5 and no direction crossed it.
 
-| Direction | Features | Mean slope | Slope SD | Mean curvature | Threshold crossings |
-|---|---:|---:|---:|---:|---:|
-| Social | 5 | +0.4287 | 0.0391 | +0.0062 | not reached |
-| Screen | 4 | +0.3203 | 0.0372 | -0.0131 | not reached |
-| Mobility | 3 | -0.2636 | 0.0218 | +0.0053 | not reached |
-| Activity | 3 | +0.0752 | 0.0263 | +0.0034 | not reached |
-| Sleep | 2 | -0.0184 | 0.0287 | -0.0004 | not reached |
+| Direction | Features | Mean slope | 95% slope CI | Mean curvature | 95% curvature CI | Threshold crossings |
+|---|---:|---:|---:|---:|---:|---:|
+| Screen | 4 | +0.3220 | [+0.3060, +0.3374] | -0.0123 | [-0.0226, +0.0033] | 0/59 |
+| Sleep | 2 | +0.1016 | [+0.0941, +0.1106] | -0.0136 | [-0.0192, -0.0085] | 0/59 |
+| Social | 5 | +0.0824 | [+0.0673, +0.1003] | -0.0120 | [-0.0133, -0.0111] | 0/59 |
+| Activity | 3 | +0.0449 | [+0.0342, +0.0542] | +0.0109 | [+0.0061, +0.0162] | 0/59 |
+| Mobility | 3 | -0.2786 | [-0.2933, -0.2677] | +0.0330 | [+0.0317, +0.0362] | 0/59 |
 
-The StudentLife exploratory threshold was calibrated to 12.5, approximately the training
-target's 90th percentile. No direction crossed 12.5 within [-2, 2], so all
-StudentLife margins are unavailable rather than zero. This threshold should
-not be compared directly with the CES threshold of 8.0.
-
-The StudentLife ranking by absolute mean slope is social, screen, mobility,
-activity, then sleep. The near-zero sleep slope and small curvature indicate
-little modeled response to the sleep direction in this preliminary run.
+The StudentLife ranking by absolute mean slope is screen, mobility, sleep,
+social, then activity. No margin is available because no window crossed 12.5
+within the empirical alpha range. This threshold is dataset-specific and
+should not be compared directly with the CES threshold of 8.0.
 
 ### Stage 4 validity audits
 
