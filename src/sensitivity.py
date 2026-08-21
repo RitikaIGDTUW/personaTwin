@@ -298,3 +298,84 @@ def profile_all_directions(
         )
         profile[direction] = summarize_direction_response(response, threshold)
     return profile
+
+
+def profile_split(
+    model: torch.nn.Module,
+    artifact: dict,
+    feature_names: Sequence[str],
+    direction_map: dict[str, list[str]],
+    split_name: str = "test",
+    threshold: float = 8.0,
+    directions: Sequence[str] = ("sleep", "activity", "social", "mobility", "screen"),
+    max_windows: int | None = None,
+    alphas: Sequence[float] | None = None,
+    device: torch.device | str | None = None,
+    target_mean: torch.Tensor | None = None,
+    target_std: torch.Tensor | None = None,
+) -> list[dict[str, object]]:
+    """Build one sensitivity row per direction and real window in a split."""
+    if split_name not in artifact:
+        raise KeyError(f"Unknown artifact split: {split_name}")
+    split = artifact[split_name]
+    windows = split["X"]
+    limit = len(windows) if max_windows is None else min(max_windows, len(windows))
+    uids = split.get("uid")
+    rows: list[dict[str, object]] = []
+
+    for window_index in range(limit):
+        profile = profile_all_directions(
+            model=model,
+            artifact=artifact,
+            feature_names=feature_names,
+            direction_map=direction_map,
+            window=windows[window_index],
+            threshold=threshold,
+            directions=directions,
+            alphas=alphas,
+            device=device,
+            target_mean=target_mean,
+            target_std=target_std,
+        )
+        uid = uids[window_index].item() if torch.is_tensor(uids) else uids[window_index]
+        for direction, summary in profile.items():
+            rows.append(
+                {
+                    "window_index": window_index,
+                    "uid": str(uid),
+                    "direction": direction,
+                    "slope": None if summary is None else summary["slope"],
+                    "curvature": None if summary is None else summary["curvature"],
+                    "margin": None if summary is None else summary["margin"],
+                }
+            )
+    return rows
+
+
+def aggregate_profiles(rows: Sequence[dict[str, object]]) -> dict[str, dict[str, float]]:
+    """Aggregate per-window sensitivity rows by behavioral direction."""
+    directions = sorted({str(row["direction"]) for row in rows})
+    aggregates: dict[str, dict[str, float]] = {}
+    for direction in directions:
+        direction_rows = [row for row in rows if row["direction"] == direction]
+        summary: dict[str, float] = {"count": 0.0}
+        for metric in ("slope", "curvature", "margin"):
+            values = np.asarray(
+                [
+                    float(row[metric])
+                    for row in direction_rows
+                    if row[metric] is not None and np.isfinite(float(row[metric]))
+                ],
+                dtype=float,
+            )
+            summary[f"{metric}_count"] = float(len(values))
+            if len(values):
+                summary[f"{metric}_mean"] = float(values.mean())
+                summary[f"{metric}_median"] = float(np.median(values))
+                summary[f"{metric}_std"] = float(values.std(ddof=0))
+            else:
+                summary[f"{metric}_mean"] = float("nan")
+                summary[f"{metric}_median"] = float("nan")
+                summary[f"{metric}_std"] = float("nan")
+        aggregates[direction] = summary
+    return aggregates

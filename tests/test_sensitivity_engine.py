@@ -117,3 +117,31 @@ def test_profile_all_directions_runs_each_direction():
 
     assert set(profile) == set(feature_names)
     assert all("slope" in summary for summary in profile.values())
+
+
+def test_profile_split_and_aggregate_profiles():
+    from src.sensitivity import aggregate_profiles, profile_split
+
+    class SumModel(torch.nn.Module):
+        def forward(self, features):
+            return features.sum(dim=(1, 2), keepdim=False).unsqueeze(-1)
+
+    feature_names = ["activity"]
+    direction_map = {"activity": ["activity"]}
+    artifact = {
+        "train": {"X": torch.ones(4, 2, 1)},
+        "test": {"X": torch.zeros(2, 2, 1), "uid": torch.tensor([10, 11])},
+    }
+    rows = profile_split(
+        model=SumModel(),
+        artifact=artifact,
+        feature_names=feature_names,
+        direction_map=direction_map,
+        directions=["activity"],
+        max_windows=2,
+        threshold=1.0,
+        alphas=[0.0, 1.0],
+    )
+    aggregate = aggregate_profiles(rows)
+    assert len(rows) == 2
+    assert aggregate["activity"]["slope_count"] == 2.0
