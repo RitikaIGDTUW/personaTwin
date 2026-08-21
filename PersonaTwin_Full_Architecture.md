@@ -66,8 +66,8 @@ Sensitivity Engine design (input-space perturbation, not latent-space).
               └────────────────┬─────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────────────┐
-│ STAGE 4 — SENSITIVITY ENGINE (core contribution)   [DONE — results  │
-│                                                      below]          │
+│ STAGE 4 — SENSITIVITY ENGINE (core contribution)   [CORRECTED —     │
+│                                                      rerun required] │
 │                                                                       │
 │   For a real person's real 7-day window, and one behavioral          │
 │   direction (sleep / activity / social / mobility / screen):         │
@@ -134,16 +134,26 @@ normally — every step stays in units you can explain and defend.
 
 ## Stage 4 empirical results
 
-The implementation now supports real input-space perturbations, all five
+**Status of the numbers below:** the original exploratory tables are retained
+for provenance but are superseded. The corrected implementation now uses
+direction-specific empirical alpha ranges, uncertainty-weighted curve fits,
+bootstrap intervals, and participant-clustered population intervals. CES and
+StudentLife results must be regenerated before final reporting.
+
+The implementation supports real input-space perturbations, all five
 behavioral directions, per-window profiles, population aggregation, CSV/JSON
 export, and summary plots. Alpha is swept over 21 values in the plausibility
-guarded range [-2, 2]. These are model-sensitivity results, not causal
-effects.
+guarded empirical range for each direction. These are model-sensitivity
+results, not causal effects.
 
 ### CES (primary, calibration-ready)
 
-Results below use 100 real test windows, producing 500 profile rows
-(100 windows x 5 directions), with PAM threshold 8.0.
+The superseded exploratory results used 100 real test windows, producing 500
+profile rows (100 windows x 5 directions), with PAM threshold 8.0. CES has
+3,599 test windows from 202 distinct participants. Its mobility group has 118
+location-derived features, while its screen group has 56 unlock-derived
+features. These operationalizations should not be treated as equivalent to
+the corresponding StudentLife groups.
 
 | Direction | Mean slope | Slope SD | Mean curvature | Threshold crossings |
 |---|---:|---:|---:|---:|
@@ -160,9 +170,11 @@ that cross the threshold within the alpha range.
 
 ### StudentLife (preliminary)
 
-Results use all 59 available test windows, producing 295 profile rows
+The superseded exploratory results used all 59 available test windows,
+producing 295 profile rows
 (59 windows x 5 directions). StudentLife has features in all five
-directions. Its uncertainty and sensitivity results remain preliminary.
+directions and 23 distinct participants. Its uncertainty and sensitivity
+results remain preliminary.
 
 | Direction | Features | Mean slope | Slope SD | Mean curvature | Threshold crossings |
 |---|---:|---:|---:|---:|---:|
@@ -172,7 +184,7 @@ directions. Its uncertainty and sensitivity results remain preliminary.
 | Activity | 3 | +0.0752 | 0.0263 | +0.0034 | not reached |
 | Sleep | 2 | -0.0184 | 0.0287 | -0.0004 | not reached |
 
-The StudentLife threshold was calibrated to 12.5, approximately the training
+The StudentLife exploratory threshold was calibrated to 12.5, approximately the training
 target's 90th percentile. No direction crossed 12.5 within [-2, 2], so all
 StudentLife margins are unavailable rather than zero. This threshold should
 not be compared directly with the CES threshold of 8.0.
@@ -180,6 +192,36 @@ not be compared directly with the CES threshold of 8.0.
 The StudentLife ranking by absolute mean slope is social, screen, mobility,
 activity, then sleep. The near-zero sleep slope and small curvature indicate
 little modeled response to the sleep direction in this preliminary run.
+
+### Stage 4 validity audits
+
+Direction-map consistency was checked before cross-dataset interpretation.
+CES mobility is dominated by location-derived features such as `loc_dist_*`,
+whereas StudentLife mobility contains `gps_n`, `gps_distance_km`, and
+`gps_unique_locations`. CES screen uses unlock-duration/count signals;
+StudentLife screen uses phone-lock and app-usage signals. The directions are
+therefore dataset-specific operationalizations and their slopes should be
+reported independently, not as a direct cross-dataset effect comparison.
+
+The training-data mobility/PAM correlation audit found no suspicious feature
+with absolute correlation above 0.6: the largest absolute correlation was
+approximately 0.157 for CES and 0.057 for StudentLife. This is a screening
+check, not proof that leakage is impossible.
+
+The corrected engine fits uncertainty-weighted quadratic curves using inverse
+predictive variance and estimates 95% intervals by bootstrap. Population
+intervals resample participant-level clusters rather than treating overlapping
+windows as independent. StudentLife deterministic/calibrated uncertainty must
+be passed explicitly before its uncertainty-weighted intervals can be called
+calibrated.
+
+Methodologically, this extends Individual Conditional Expectation (ICE) and
+derivative-ICE analysis (Goldstein et al., 2015) from static tabular models to
+a personalized temporal GRU: behavioral feature groups replace individual
+features, perturbations are bounded by real training data, and uncertainty is
+used in curve fitting and interval estimation. The ICEbox package is the
+reference implementation for the classical ICE formulation; this project
+implements the temporal, grouped-direction extension directly in PyTorch.
 
 ## Next action: Stage 5 validation
 

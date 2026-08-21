@@ -216,3 +216,70 @@ def test_plot_sensitivity_results_writes_figures(tmp_path):
 
     assert slope_path.exists()
     assert crossing_path.exists()
+
+
+def test_stage4_audit_helpers():
+    from src.sensitivity import (
+        compare_direction_maps,
+        direction_map_feature_counts,
+        mobility_target_correlations,
+        participant_counts,
+    )
+
+    maps = {
+        "ces": {"mobility": ["loc_distance"], "screen": ["unlock_time"]},
+        "studentlife": {"mobility": ["gps_distance"], "screen": ["app_usage"]},
+    }
+    assert direction_map_feature_counts(maps["ces"])["mobility"] == 1
+    comparison = compare_direction_maps(maps)
+    assert comparison["mobility"]["ces"]["features"] == ["loc_distance"]
+
+    frame = __import__("pandas").DataFrame({
+        "pam": [1.0, 2.0, 3.0],
+        "loc_distance": [1.0, 2.0, 4.0],
+    })
+    correlations = mobility_target_correlations(
+        frame,
+        {"mobility": ["loc_distance"]},
+    )
+    assert correlations["loc_distance"] > 0.0
+
+    artifact = {"test": {"X": torch.zeros(3, 2, 1), "uid": torch.tensor([1, 1, 2])}}
+    assert participant_counts(artifact) == {"n_windows": 3, "n_participants": 2}
+
+
+def test_uncertainty_weighted_summary_reports_bootstrap_intervals():
+    response = [
+        {"alpha": -1.0, "predicted_mean": 1.0, "predicted_std": 0.1},
+        {"alpha": 0.0, "predicted_mean": 2.0, "predicted_std": 0.1},
+        {"alpha": 1.0, "predicted_mean": 3.0, "predicted_std": 0.1},
+    ]
+    summary = summarize_direction_response(
+        response,
+        threshold=2.5,
+        bootstrap_samples=50,
+    )
+
+    assert summary["slope_ci_low"] < summary["slope"]
+    assert summary["slope"] < summary["slope_ci_high"]
+
+
+def test_probe_accepts_calibrated_std_for_deterministic_models():
+    from src.sensitivity import probe_direction
+
+    class SumModel(torch.nn.Module):
+        def forward(self, features):
+            return features.sum(dim=(1, 2)).unsqueeze(-1)
+
+    response = probe_direction(
+        model=SumModel(),
+        artifact={"train": {"X": torch.ones(4, 2, 1)}},
+        feature_names=["activity"],
+        direction_map={"activity": ["activity"]},
+        direction="activity",
+        window=torch.zeros(2, 1),
+        alphas=[-1.0, 0.0, 1.0],
+        calibrated_std=0.5,
+    )
+
+    assert all(item["predicted_std"] == 0.5 for item in response)
