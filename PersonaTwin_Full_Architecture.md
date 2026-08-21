@@ -66,28 +66,31 @@ Sensitivity Engine design (input-space perturbation, not latent-space).
               └────────────────┬─────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────────────┐
-│ STAGE 4 — SENSITIVITY ENGINE (core contribution)   [CORRECTED —     │
-│                                                      rerun required] │
+│ STAGE 4 — SENSITIVITY ENGINE (core contribution)   [DONE —          │
+│                                                      corrected]      │
 │                                                                       │
 │   For a real person's real 7-day window, and one behavioral          │
 │   direction (sleep / activity / social / mobility / screen):         │
 │                                                                       │
 │   1. Take the REAL input window x  (not z — this was the fix)        │
-│   2. For alpha in plausible range for this direction:                │
+│   2. For alpha in the empirical range for this direction:             │
 │        x' = x + alpha * (per-feature training-set SD),               │
 │             applied only to that direction's feature columns          │
-│        clip alpha range to the empirically observed range for        │
-│        that direction (plausibility guard)                            │
-│   3. Run the FULL trained model forward on x'  →  (mean, std)         │
-│   4. Collect (alpha, mean, std) across the range                      │
-│   5. Fit a smooth curve → compute:                                     │
+│        use the composite direction's observed training range          │
+│        as the plausibility guard                                     │
+│   3. Batch windows × alpha values on the selected device              │
+│      and run the full trained model forward → (mean, std)             │
+│   4. Fit an inverse-variance-weighted curve → compute:                │
 │        slope     = responsiveness near current state                  │
 │        curvature = diminishing / increasing returns                   │
 │        margin    = smallest alpha crossing a chosen PAM threshold     │
-│   6. Repeat for all 5 directions → per-person sensitivity profile      │
+│   5. Bootstrap uncertainty and aggregate by participant clusters        │
+│   6. Repeat for all 5 directions → per-person/population profiles       │
 │                                                                        │
-│   Run on CES first (calibration-ready). StudentLife results carry     │
-│   the same "preliminary" label as its uncertainty numbers.             │
+│   CES: uncertainty-native GRU, 3,599 windows / 202 participants        │
+│   StudentLife: residual-calibrated deterministic GRU,                 │
+│                59 windows / 23 participants                           │
+│   Outputs: CSV + JSON summaries + PNG plots                           │
 └──────────────────────────────┬───────────────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────────────┐
@@ -137,10 +140,11 @@ normally — every step stays in units you can explain and defend.
 **Status of the numbers below:** the original exploratory tables are retained
 for provenance but are superseded. In particular, the previously displayed
 CES confidence intervals were invalid because their bootstrap statistic did
-not match the reported window-weighted mean. The corrected implementation now uses
-direction-specific empirical alpha ranges, uncertainty-weighted curve fits,
-bootstrap intervals, and participant-clustered population intervals. CES and
-StudentLife results must be regenerated before final reporting.
+not match the reported window-weighted mean. The corrected implementation now
+uses direction-specific empirical alpha ranges, uncertainty-weighted curve
+fits, bootstrap intervals, and participant-clustered population intervals.
+The corrected full CES and StudentLife runs are complete; the old tables below
+remain only as provenance and must not be used for reporting.
 
 The implementation supports real input-space perturbations, all five
 behavioral directions, per-window profiles, population aggregation, CSV/JSON
@@ -225,6 +229,33 @@ features, perturbations are bounded by real training data, and uncertainty is
 used in curve fitting and interval estimation. The ICEbox package is the
 reference implementation for the classical ICE formulation; this project
 implements the temporal, grouped-direction extension directly in PyTorch.
+
+## Current implementation architecture
+
+```text
+processed sequence artifact
+        |
+        +--> feature schema + generated direction map
+        |       |
+        |       +--> empirical alpha bounds per direction
+        |
+        +--> dataset-specific trained twin
+        |       +--> CES: uncertainty mean/logvar heads
+        |       +--> StudentLife: deterministic mean + residual std
+        |
+        +--> batched sensitivity engine
+                +--> real 7-day windows
+                +--> direction-specific SD perturbations
+                +--> windows x alpha values on CPU/GPU
+                +--> weighted slope/curvature/margin
+                +--> participant-cluster bootstrap CIs
+                +--> per-window rows and population summaries
+                        +--> CSV / JSON / PNG outputs
+```
+
+The shared engine is dataset-agnostic at the model-forward and aggregation
+layers. Dataset-specific configuration is limited to feature schemas,
+direction maps, target thresholds, checkpoint paths, and uncertainty source.
 
 ## Next action: Stage 5 validation
 
