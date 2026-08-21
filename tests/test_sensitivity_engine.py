@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from src.sensitivity import (
@@ -62,3 +63,17 @@ def test_summarize_direction_response_returns_guarded_metrics():
     assert "margin" in summary
     assert summary["slope"] == summary["slope"]
     assert summary["margin"] >= 0.0
+
+
+def test_probe_rejects_direction_with_no_matching_features():
+    from src.sensitivity import probe_direction
+
+    with pytest.raises(ValueError, match="no features"):
+        probe_direction(
+            model=torch.nn.Linear(2, 1),
+            artifact={"train": {"X": torch.zeros(1, 1, 2)}},
+            feature_names=["sleep_mean", "quality_activity"],
+            direction_map={"activity": ["old_activity_feature"]},
+            direction="activity",
+            window=torch.zeros(1, 2),
+        )

@@ -165,6 +165,11 @@ def probe_direction(
     """
     if direction not in direction_map:
         raise KeyError(f"Unknown direction: {direction}")
+    indices = direction_feature_indices(feature_names, direction_map, direction)
+    if not indices:
+        raise ValueError(
+            f"Direction {direction!r} has no features in the supplied feature schema"
+        )
 
     if device is None:
         device = next(model.parameters()).device
