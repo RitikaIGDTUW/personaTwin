@@ -433,3 +433,51 @@ def export_profiles(
         json.dump(serializable, file, indent=2, allow_nan=False)
 
     return rows_path, aggregates_path
+
+
+def plot_sensitivity_results(
+    aggregates: dict[str, dict[str, float]],
+    output_dir: str | Path,
+) -> tuple[Path, Path]:
+    """Save slope and threshold-crossing summary plots."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    available = [
+        direction
+        for direction, summary in aggregates.items()
+        if summary.get("slope_count", 0.0) > 0
+    ]
+    if not available:
+        raise ValueError("No finite sensitivity summaries are available to plot")
+
+    slopes = [aggregates[direction]["slope_mean"] for direction in available]
+    slope_sd = [aggregates[direction]["slope_std"] for direction in available]
+    crossing_rates = [
+        aggregates[direction].get("margin_count", 0.0)
+        / max(aggregates[direction].get("count", 0.0), 1.0)
+        for direction in available
+    ]
+
+    slope_path = output_path / "ces_sensitivity_slopes.png"
+    figure, axis = plt.subplots(figsize=(8, 5))
+    axis.bar(available, slopes, yerr=slope_sd, capsize=4, color="#2f6690")
+    axis.axhline(0.0, color="black", linewidth=0.8)
+    axis.set_ylabel("Mean slope (PAM units per alpha)")
+    axis.set_title("CES sensitivity by behavioral direction")
+    figure.tight_layout()
+    figure.savefig(slope_path, dpi=200)
+    plt.close(figure)
+
+    crossing_path = output_path / "ces_threshold_crossing_rates.png"
+    figure, axis = plt.subplots(figsize=(8, 5))
+    axis.bar(available, crossing_rates, color="#3a7d44")
+    axis.set_ylim(0.0, 1.0)
+    axis.set_ylabel("Fraction crossing PAM threshold")
+    axis.set_title("Threshold crossing frequency by direction")
+    figure.tight_layout()
+    figure.savefig(crossing_path, dpi=200)
+    plt.close(figure)
+
+    return slope_path, crossing_path

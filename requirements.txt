@@ -4,4 +4,5 @@ pyreadr
 pyarrow
 torch
 scikit-learn
+matplotlib
 jupyter

@@ -194,3 +194,25 @@ def test_export_profiles_writes_csv_and_json(tmp_path):
     assert rows_path.exists()
     assert aggregates_path.exists()
     assert json.loads(aggregates_path.read_text())["activity"]["margin_mean"] is None
+
+
+def test_plot_sensitivity_results_writes_figures(tmp_path):
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from src.sensitivity import plot_sensitivity_results
+
+    aggregates = {
+        "activity": {
+            "count": 2.0,
+            "slope_count": 2.0,
+            "slope_mean": 0.5,
+            "slope_std": 0.1,
+            "margin_count": 1.0,
+        },
+        "social": {"count": 2.0, "slope_count": 0.0},
+    }
+    slope_path, crossing_path = plot_sensitivity_results(aggregates, tmp_path)
+
+    assert slope_path.exists()
+    assert crossing_path.exists()
