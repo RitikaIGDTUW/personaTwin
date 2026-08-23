@@ -67,10 +67,11 @@ Sensitivity Engine design (input-space perturbation, not latent-space).
                                │
 ┌──────────────────────────────▼──────────────────────────────────────┐
 │ STAGE 4 — SENSITIVITY ENGINE (core contribution)   [DONE —          │
-│                                                      corrected]      │
+│                                      corrected; interaction hardened] │
 │                                                                       │
-│   For a real person's real 7-day window, and one behavioral          │
-│   direction (sleep / activity / social / mobility / screen):         │
+│   For a real person's real 7-day window, measure marginal and       │
+│   pairwise behavioral sensitivity (sleep / activity / social /      │
+│   mobility / screen):                                                │
 │                                                                       │
 │   1. Take the REAL input window x  (not z — this was the fix)        │
 │   2. For alpha in the empirical range for this direction:             │
@@ -86,6 +87,13 @@ Sensitivity Engine design (input-space perturbation, not latent-space).
 │        margin    = smallest alpha crossing a chosen PAM threshold     │
 │   5. Bootstrap uncertainty and aggregate by participant clusters        │
 │   6. Repeat for all 5 directions → per-person/population profiles       │
+│   7. For each available pair, evaluate x_ab = x + alpha_a*sd_a         │
+│      + alpha_b*sd_b and subtract the additive expectation:              │
+│      interaction = joint - marginal_a - marginal_b + baseline           │
+│      Only plausible joint perturbations are retained using the empirical  │
+│      training joint distribution. Pair summaries use participant-clustered│
+│      bootstrap CIs. This is still model sensitivity, not causal effect    │
+│      estimation.                                                          │
 │                                                                        │
 │   CES: uncertainty-native GRU, 3,599 windows / 202 participants        │
 │   StudentLife: residual-calibrated deterministic GRU,                 │
@@ -153,6 +161,22 @@ export, and summary plots. Alpha is swept over 21 values in the plausibility
 guarded empirical range for each direction. These are model-sensitivity
 results, not causal effects.
 
+### Interaction hardening status
+
+The interaction extension was hardened before beginning HBN/ADHD work:
+
+| Improvement | Current status |
+|---|---|
+| Participant-clustered interaction bootstrap | Complete. Interaction responses preserve participant IDs, and pair-level aggregate CIs resample participant clusters using the same participant resampling unit as marginal profiles. |
+| Empirical joint plausibility | Complete. Each pair uses Mahalanobis distance against its training joint distribution, with the 97.5th percentile of training distances as the cutoff rather than a fixed heuristic. |
+| Aggregate interaction summaries | Complete. Pair summaries include mean, median, standard deviation, absolute interaction magnitude, large-interaction fraction, and clustered CI. |
+| Seed-stability ranking check | Complete in code. The helper now reports mean pairwise Spearman agreement across all supplied seed rankings; the actual multi-seed experiment remains Stage 5 validation work. |
+
+The focused sensitivity regression suite has 19 passing tests. Therefore the
+Stage 4 interaction implementation is finalized at the code and regression
+test level. Empirical claims about ranking stability still require rerunning
+selected profiles with at least three independently trained seeds.
+
 ### CES (primary, calibration-ready)
 
 The corrected run used all 3,599 test windows from 202 participants, producing
@@ -210,10 +234,13 @@ approximately 0.157 for CES and 0.057 for StudentLife. This is a screening
 check, not proof that leakage is impossible.
 
 The corrected engine fits uncertainty-weighted quadratic curves using inverse
-predictive variance and estimates 95% intervals by bootstrap. Population
-intervals resample participant-level clusters, pool all sampled windows, and
-recompute the same window-weighted mean reported in the table rather than
-treating overlapping windows as independent. StudentLife
+predictive variance and estimates 95% intervals by bootstrap. Pairwise
+interaction summaries use the joint-minus-additive term, filter joint probes
+against the empirical training joint range, and aggregate rows with
+participant-clustered bootstrap intervals. Population intervals resample
+participant-level clusters, pool all sampled windows, and recompute the same
+window-weighted mean reported in the table rather than treating overlapping
+windows as independent. StudentLife
 deterministic/calibrated uncertainty must be passed explicitly before its
 uncertainty-weighted intervals can be called calibrated.
 
@@ -256,6 +283,8 @@ direction maps, target thresholds, checkpoint paths, and uncertainty source.
 
 - Manually inspect curves for 3-5 individuals for discontinuities or
         physiologically implausible responses.
-- Repeat selected profiles across training seeds and compare slope rankings.
+- Repeat selected marginal and interaction profiles across at least three
+        training seeds and compare slope and absolute-interaction rankings;
+        use the seed-stability helper to report rank consistency.
 - Confirm that the same Sensitivity Engine runs on CES and StudentLife
         without dataset-specific code changes.

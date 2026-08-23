@@ -238,6 +238,128 @@ def test_plot_sensitivity_results_writes_figures(tmp_path):
     assert crossing_path.exists()
 
 
+def test_probe_interaction_separates_joint_and_marginal_response():
+    from src.sensitivity import probe_interaction, summarize_interaction_response
+
+    class InteractionModel(torch.nn.Module):
+        def forward(self, features):
+            activity = features[:, :, 0].mean(dim=1)
+            sleep = features[:, :, 1].mean(dim=1)
+            return (activity + sleep + activity * sleep).unsqueeze(-1)
+
+    artifact = {"train": {"X": torch.tensor([[[1.0, 1.0]], [[2.0, 2.0]]])}}
+    response = probe_interaction(
+        model=InteractionModel(),
+        artifact=artifact,
+        feature_names=["activity", "sleep"],
+        direction_map={"activity": ["activity"], "sleep": ["sleep"]},
+        direction_a="activity",
+        direction_b="sleep",
+        window=torch.zeros(1, 2),
+        alphas_a=[0.0, 1.0],
+        alphas_b=[0.0, 1.0],
+    )
+    summary = summarize_interaction_response(response)
+
+    assert summary["max_synergy"] > 0.0
+    assert summary["max_antagonism"] == 0.0
+    assert "interaction_ci_low" in summary
+    assert "interaction_ci_high" in summary
+
+
+def test_probe_interaction_flags_implausible_joint_ranges():
+    from src.sensitivity import probe_interaction
+
+    class InteractionModel(torch.nn.Module):
+        def forward(self, features):
+            return features.sum(dim=(1, 2), keepdim=False).unsqueeze(-1)
+
+    artifact = {
+        "train": {
+            "X": torch.tensor([
+                [[0.0, 0.0]],
+                [[1.0, 1.0]],
+                [[0.5, 0.5]],
+            ])
+        }
+    }
+    response = probe_interaction(
+        model=InteractionModel(),
+        artifact=artifact,
+        feature_names=["activity", "sleep"],
+        direction_map={"activity": ["activity"], "sleep": ["sleep"]},
+        direction_a="activity",
+        direction_b="sleep",
+        window=torch.zeros(1, 2),
+        alphas_a=[10.0],
+        alphas_b=[10.0],
+    )
+
+    assert any(not row["plausible"] for row in response)
+
+
+def test_interaction_response_preserves_participant_id_for_cluster_bootstrap():
+    from src.sensitivity import probe_interaction, summarize_interaction_response
+
+    class SumModel(torch.nn.Module):
+        def forward(self, features):
+            return features.sum(dim=(1, 2)).unsqueeze(-1)
+
+    artifact = {"train": {"X": torch.tensor([[[0.0, 0.0]], [[1.0, 1.0]]])}}
+    response = probe_interaction(
+        model=SumModel(),
+        artifact=artifact,
+        feature_names=["activity", "sleep"],
+        direction_map={"activity": ["activity"], "sleep": ["sleep"]},
+        direction_a="activity",
+        direction_b="sleep",
+        window=torch.zeros(1, 2),
+        alphas_a=[0.0, 1.0],
+        alphas_b=[0.0, 1.0],
+        participant_id=17,
+    )
+
+    assert all(row["uid"] == 17 for row in response)
+    summary = summarize_interaction_response(response, n_boot=20)
+    assert summary["interaction_ci_low"] == summary["interaction_ci_high"]
+
+
+def test_profile_direction_pairs_enumerates_available_pairs():
+    from src.sensitivity import profile_direction_pairs
+
+    class SumModel(torch.nn.Module):
+        def forward(self, features):
+            return features.sum(dim=(1, 2)).unsqueeze(-1)
+
+    artifact = {
+        "test": {
+            "X": torch.zeros(2, 1, 3),
+            "uid": ["p1", "p2"],
+        },
+        "train": {"X": torch.ones(2, 1, 3)},
+    }
+    rows = profile_direction_pairs(
+        model=SumModel(),
+        artifact=artifact,
+        feature_names=["sleep", "activity", "social"],
+        direction_map={
+            "sleep": ["sleep"],
+            "activity": ["activity"],
+            "social": ["social"],
+        },
+        directions=["sleep", "activity", "social"],
+        alphas_a=[0.0, 1.0],
+        alphas_b=[0.0, 1.0],
+    )
+
+    assert len(rows) == 6
+    assert {(row["direction_a"], row["direction_b"]) for row in rows} == {
+        ("sleep", "activity"),
+        ("sleep", "social"),
+        ("activity", "social"),
+    }
+
+
 def test_stage4_audit_helpers():
     from src.sensitivity import (
         compare_direction_maps,
@@ -297,6 +419,19 @@ def test_aggregate_bootstrap_ci_brackets_window_weighted_mean():
 
     assert summary["activity"]["slope_ci_low"] <= summary["activity"]["slope_mean"]
     assert summary["activity"]["slope_mean"] <= summary["activity"]["slope_ci_high"]
+
+
+def test_interaction_seed_stability_uses_all_seed_pairs():
+    from src.sensitivity import interaction_seed_stability
+
+    summaries = [
+        {"a:b": 3.0, "a:c": 2.0, "b:c": 1.0},
+        {"a:b": 2.0, "a:c": 3.0, "b:c": 1.0},
+        {"a:b": 1.0, "a:c": 2.0, "b:c": 3.0},
+    ]
+
+    stability = interaction_seed_stability(summaries, ["a:b", "a:c", "b:c"])
+    assert stability == pytest.approx(-1.0 / 3.0)
 
 
 def test_probe_accepts_calibrated_std_for_deterministic_models():

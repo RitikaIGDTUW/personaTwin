@@ -177,6 +177,81 @@ def perturb_window_for_direction(
     return output
 
 
+def _direction_score(
+    window: torch.Tensor | np.ndarray,
+    feature_indices: Sequence[int],
+) -> float:
+    """Reduce a directional feature block to a single scalar summary score."""
+    tensor = torch.as_tensor(window, dtype=torch.float32)
+    if tensor.dim() == 2:
+        return float(tensor[:, list(feature_indices)].mean())
+    if tensor.dim() == 3:
+        return float(tensor[:, :, list(feature_indices)].mean())
+    raise ValueError("window must have shape (T, F) or (B, T, F)")
+
+
+def _pair_plausibility_stats(
+    artifact: dict,
+    feature_names: Sequence[str],
+    direction_map: dict[str, list[str]],
+    direction_a: str,
+    direction_b: str,
+) -> tuple[np.ndarray, np.ndarray, float]:
+    """Return the train-set joint mean, covariance, and 97.5% Mahalanobis threshold."""
+    train_x = artifact.get("train", {}).get("X")
+    if train_x is None:
+        return np.asarray([0.0, 0.0], dtype=float), np.eye(2), 0.0
+    train_x = train_x.float()
+    indices_a = direction_feature_indices(feature_names, direction_map, direction_a)
+    indices_b = direction_feature_indices(feature_names, direction_map, direction_b)
+    if not indices_a or not indices_b:
+        return np.asarray([0.0, 0.0], dtype=float), np.eye(2), 0.0
+
+    a_train = train_x[:, :, indices_a].mean(dim=2).reshape(-1).numpy()
+    b_train = train_x[:, :, indices_b].mean(dim=2).reshape(-1).numpy()
+    joint_train = np.column_stack([a_train, b_train])
+    mean_vec = joint_train.mean(axis=0)
+    covariance = np.cov(joint_train.T)
+    if covariance.shape == ():
+        covariance = np.asarray([[float(covariance)]])
+    covariance = np.atleast_2d(covariance)
+    if np.allclose(covariance, 0.0):
+        covariance = np.eye(2) * 1e-6
+    if np.linalg.matrix_rank(covariance) < 2:
+        covariance = covariance + np.eye(2) * 1e-6
+    distances = np.einsum(
+        "ij,jk,ik->i",
+        joint_train - mean_vec,
+        np.linalg.pinv(covariance),
+        joint_train - mean_vec,
+    )
+    threshold = float(np.quantile(distances, 0.975))
+    return mean_vec, covariance, threshold
+
+
+def _joint_plausibility_check(
+    perturbation: torch.Tensor | np.ndarray,
+    artifact: dict,
+    feature_names: Sequence[str],
+    direction_map: dict[str, list[str]],
+    direction_a: str,
+    direction_b: str,
+) -> tuple[bool, float, float, float]:
+    """Return whether a joint perturbation is inside the pair's empirical training range."""
+    mean_vec, covariance, threshold = _pair_plausibility_stats(
+        artifact, feature_names, direction_map, direction_a, direction_b
+    )
+    if threshold <= 0.0:
+        return True, 0.0, float(mean_vec[0]), float(mean_vec[1])
+    current_vec = np.asarray([
+        _direction_score(perturbation, direction_feature_indices(feature_names, direction_map, direction_a)),
+        _direction_score(perturbation, direction_feature_indices(feature_names, direction_map, direction_b)),
+    ], dtype=float)
+    delta = current_vec - mean_vec
+    mahalanobis = float(delta.T @ np.linalg.pinv(covariance) @ delta)
+    return mahalanobis <= threshold, mahalanobis, threshold, float(mean_vec[0])
+
+
 def _coerce_prediction(
     prediction: torch.Tensor | tuple[torch.Tensor, torch.Tensor],
     target_mean: torch.Tensor | None = None,
@@ -441,6 +516,63 @@ def profile_all_directions(
     return profile
 
 
+def profile_direction_pairs(
+    model: torch.nn.Module,
+    artifact: dict,
+    feature_names: Sequence[str],
+    direction_map: dict[str, list[str]],
+    split_name: str = "test",
+    directions: Sequence[str] = ("sleep", "activity", "social", "mobility", "screen"),
+    max_windows: int | None = None,
+    alphas_a: Sequence[float] | None = None,
+    alphas_b: Sequence[float] | None = None,
+    device: torch.device | str | None = None,
+    target_mean: torch.Tensor | None = None,
+    target_std: torch.Tensor | None = None,
+    personalized: bool = False,
+) -> list[dict[str, object]]:
+    """Profile every available direction pair on real windows in a split."""
+    if split_name not in artifact:
+        raise KeyError(f"Unknown artifact split: {split_name}")
+    available = [
+        direction
+        for direction in directions
+        if direction_feature_indices(feature_names, direction_map, direction)
+    ]
+    windows = artifact[split_name]["X"]
+    limit = len(windows) if max_windows is None else min(max_windows, len(windows))
+    uids = artifact[split_name].get("uid")
+    rows = []
+    for index in range(limit):
+        participant_id = None if uids is None else uids[index]
+        for pair_index, direction_a in enumerate(available):
+            for direction_b in available[pair_index + 1:]:
+                response = probe_interaction(
+                    model=model,
+                    artifact=artifact,
+                    feature_names=feature_names,
+                    direction_map=direction_map,
+                    direction_a=direction_a,
+                    direction_b=direction_b,
+                    window=windows[index],
+                    alphas_a=alphas_a,
+                    alphas_b=alphas_b,
+                    device=device,
+                    target_mean=target_mean,
+                    target_std=target_std,
+                    personalized=personalized,
+                    participant_id=participant_id,
+                )
+                rows.append({
+                    "window_index": index,
+                    "uid": participant_id,
+                    "direction_a": direction_a,
+                    "direction_b": direction_b,
+                    **summarize_interaction_response(response),
+                })
+    return rows
+
+
 def profile_split(
     model: torch.nn.Module,
     artifact: dict,
@@ -629,6 +761,97 @@ def aggregate_profiles(
     return aggregates
 
 
+def aggregate_interaction_profiles(
+    rows: Sequence[dict[str, object]],
+    reporting_threshold: float = 0.0,
+    bootstrap_samples: int = 1000,
+    random_seed: int = 42,
+) -> dict[str, dict[str, float]]:
+    """Aggregate interaction rows by pair with participant-clustered CIs."""
+    pairs = sorted({
+        (str(row["direction_a"]), str(row["direction_b"]))
+        for row in rows
+    })
+    aggregates: dict[str, dict[str, float]] = {}
+    for direction_a, direction_b in pairs:
+        pair_rows = [
+            row for row in rows
+            if str(row.get("direction_a")) == direction_a
+            and str(row.get("direction_b")) == direction_b
+        ]
+        interaction_values = np.asarray(
+            [
+                float(row["interaction"])
+                for row in pair_rows
+                if row.get("interaction") is not None and np.isfinite(float(row["interaction"]))
+            ],
+            dtype=float,
+        )
+        summary: dict[str, float] = {
+            "count": float(len(pair_rows)),
+            "participant_count": float(len({str(row.get("uid", "unknown")) for row in pair_rows})),
+        }
+        if interaction_values.size:
+            summary["interaction_mean"] = float(interaction_values.mean())
+            summary["interaction_median"] = float(np.median(interaction_values))
+            summary["interaction_std"] = float(interaction_values.std(ddof=0))
+            summary["interaction_abs_mean"] = float(np.abs(interaction_values).mean())
+            summary["interaction_large_fraction"] = float(
+                (np.abs(interaction_values) > abs(reporting_threshold)).mean()
+            )
+        else:
+            summary["interaction_mean"] = float("nan")
+            summary["interaction_median"] = float("nan")
+            summary["interaction_std"] = float("nan")
+            summary["interaction_abs_mean"] = float("nan")
+            summary["interaction_large_fraction"] = float("nan")
+        low, high = _interaction_cluster_interval(
+            pair_rows,
+            metric="interaction",
+            n_boot=bootstrap_samples,
+            random_seed=random_seed,
+        )
+        summary["interaction_ci_low"] = low
+        summary["interaction_ci_high"] = high
+        aggregates[f"{direction_a}:{direction_b}"] = summary
+    return aggregates
+
+
+def spearman_rank_correlation(x: Sequence[float], y: Sequence[float]) -> float:
+    """Compute Spearman rank correlation of two aligned score vectors."""
+    if len(x) != len(y):
+        raise ValueError("x and y must have the same length")
+    if len(x) < 2:
+        return 1.0
+    ranks_x = np.argsort(np.argsort(np.asarray(x, dtype=float))) + 1
+    ranks_y = np.argsort(np.argsort(np.asarray(y, dtype=float))) + 1
+    corr = np.corrcoef(ranks_x, ranks_y)[0, 1]
+    return float(np.nan_to_num(corr, nan=1.0))
+
+
+def interaction_seed_stability(
+    interaction_summaries: Sequence[dict[str, float]],
+    pairs: Sequence[str],
+) -> float:
+    """Return mean pairwise Spearman stability across all seed rankings."""
+    if not interaction_summaries:
+        return 1.0
+    scores = []
+    for summary in interaction_summaries:
+        pair_scores = []
+        for pair in pairs:
+            pair_scores.append(abs(summary.get(pair, 0.0)))
+        scores.append(pair_scores)
+    if len(scores) < 2 or len(pairs) < 2:
+        return 1.0
+    correlations = [
+        spearman_rank_correlation(scores[first], scores[second])
+        for first in range(len(scores))
+        for second in range(first + 1, len(scores))
+    ]
+    return float(np.mean(correlations))
+
+
 def export_profiles(
     rows: Sequence[dict[str, object]],
     aggregates: dict[str, dict[str, float]],
@@ -721,3 +944,243 @@ def plot_sensitivity_results(
     plt.close(figure)
 
     return slope_path, crossing_path
+
+
+def probe_interaction(
+    model: torch.nn.Module,
+    artifact: dict,
+    feature_names: Sequence[str],
+    direction_map: dict[str, list[str]],
+    direction_a: str,
+    direction_b: str,
+    window: torch.Tensor | np.ndarray,
+    alphas_a: Sequence[float] | None = None,
+    alphas_b: Sequence[float] | None = None,
+    device: torch.device | str | None = None,
+    target_mean: torch.Tensor | None = None,
+    target_std: torch.Tensor | None = None,
+    personalized: bool = False,
+    participant_id: int | str | None = None,
+) -> list[dict[str, float | None]]:
+    """Measure joint input-space sensitivity for a pair of directions.
+
+    The interaction value is the joint prediction minus both marginal
+    predictions plus the unperturbed prediction. Positive values indicate
+    model-predicted synergy; negative values indicate antagonism. This is not
+    a causal interaction effect.
+    """
+    if direction_a == direction_b:
+        raise ValueError("Interaction directions must be different")
+    indices_a = direction_feature_indices(feature_names, direction_map, direction_a)
+    indices_b = direction_feature_indices(feature_names, direction_map, direction_b)
+    if not indices_a or not indices_b:
+        raise ValueError("Both interaction directions must have matched features")
+    if device is None:
+        first_parameter = next(model.parameters(), None)
+        device = first_parameter.device if first_parameter is not None else "cpu"
+    device = torch.device(device)
+
+    if alphas_a is None:
+        lower, upper = plausible_alpha_bounds(
+            artifact, feature_names, direction_map, direction_a
+        )
+        alphas_a = default_direction_alphas(lower, upper, steps=7)
+    if alphas_b is None:
+        lower, upper = plausible_alpha_bounds(
+            artifact, feature_names, direction_map, direction_b
+        )
+        alphas_b = default_direction_alphas(lower, upper, steps=7)
+    alphas_a = list(dict.fromkeys([0.0, *[float(value) for value in alphas_a]]))
+    alphas_b = list(dict.fromkeys([0.0, *[float(value) for value in alphas_b]]))
+
+    base = torch.as_tensor(window, dtype=torch.float32)
+    if base.dim() == 2:
+        base = base.unsqueeze(0)
+    if base.dim() != 3:
+        raise ValueError("window must have shape (T, F) or (B, T, F)")
+
+    combinations = [(alpha_a, alpha_b) for alpha_a in alphas_a for alpha_b in alphas_b]
+    perturbed = []
+    for alpha_a, alpha_b in combinations:
+        changed = perturb_window_for_direction(
+            base,
+            artifact,
+            feature_names,
+            direction_map,
+            direction_a,
+            alpha_a,
+        )
+        changed = perturb_window_for_direction(
+            changed,
+            artifact,
+            feature_names,
+            direction_map,
+            direction_b,
+            alpha_b,
+        )
+        perturbed.append(changed)
+    inputs = torch.cat(perturbed, dim=0).to(device)
+    if personalized:
+        if participant_id is None:
+            raise ValueError("participant_id is required for personalized probes")
+        participant = torch.tensor(
+            [participant_id] * len(combinations),
+            device=device,
+            dtype=torch.long,
+        )
+        prediction = model(inputs, participant)
+    else:
+        prediction = model(inputs)
+    means, logvars = _coerce_prediction(prediction, target_mean, target_std)
+    means = means.detach().cpu().reshape(len(combinations), -1)[:, 0]
+    stds = None
+    if logvars is not None:
+        predictive_std = torch.exp(0.5 * logvars)
+        if target_std is not None:
+            predictive_std = predictive_std * target_std
+        stds = predictive_std.detach().cpu().reshape(len(combinations), -1)[:, 0]
+
+    values = {
+        combination: float(means[index])
+        for index, combination in enumerate(combinations)
+    }
+    baseline = values[(0.0, 0.0)]
+    results = []
+    for index, (alpha_a, alpha_b) in enumerate(combinations):
+        joint = values[(alpha_a, alpha_b)]
+        marginal_a = values[(alpha_a, 0.0)]
+        marginal_b = values[(0.0, alpha_b)]
+        perturbed_window = perturb_window_for_direction(
+            perturb_window_for_direction(
+                base,
+                artifact,
+                feature_names,
+                direction_map,
+                direction_a,
+                alpha_a,
+            ),
+            artifact,
+            feature_names,
+            direction_map,
+            direction_b,
+            alpha_b,
+        )
+        plausible, mahalanobis, threshold, _ = _joint_plausibility_check(
+            perturbed_window,
+            artifact,
+            feature_names,
+            direction_map,
+            direction_a,
+            direction_b,
+        )
+        results.append({
+            "alpha_a": alpha_a,
+            "alpha_b": alpha_b,
+            "predicted_mean": joint,
+            "predicted_std": None if stds is None else float(stds[index]),
+            "interaction": joint - marginal_a - marginal_b + baseline,
+            "plausible": plausible,
+            "mahalanobis_distance": mahalanobis,
+            "mahalanobis_threshold": threshold,
+            "uid": participant_id,
+        })
+    return results
+
+
+def _interaction_cluster_interval(
+    rows: Sequence[dict[str, object]],
+    metric: str = "interaction",
+    n_boot: int = 1000,
+    random_seed: int = 42,
+) -> tuple[float, float]:
+    """Bootstrap the interaction mean by participant clusters, mirroring the marginal CI logic."""
+    by_participant: dict[str, list[float]] = {}
+    for row in rows:
+        value = row.get(metric)
+        if value is None or not np.isfinite(float(value)):
+            continue
+        uid = str(row.get("uid", "unknown"))
+        by_participant.setdefault(uid, []).append(float(value))
+    participant_values = list(by_participant.values())
+    if not participant_values:
+        return float("nan"), float("nan")
+    rng = np.random.default_rng(random_seed)
+    sampled_means = []
+    for _ in range(n_boot):
+        sampled_participants = rng.integers(0, len(participant_values), size=len(participant_values))
+        sampled_values = np.concatenate([participant_values[int(index)] for index in sampled_participants])
+        sampled_means.append(float(sampled_values.mean()))
+    sampled = np.asarray(sampled_means, dtype=float)
+    return float(np.percentile(sampled, 2.5)), float(np.percentile(sampled, 97.5))
+
+
+def summarize_interaction_response(
+    response: Sequence[dict[str, float | None]],
+    n_boot: int = 200,
+    random_seed: int = 42,
+) -> dict[str, float]:
+    """Summarize joint-minus-marginal model-predicted interaction values.
+
+    The CI is computed by participant-cluster resampling when UIDs are available,
+    matching the marginal sensitivity pipeline. Otherwise, a standard row-level
+    bootstrap is used as the fallback.
+    """
+    if not response:
+        return {
+            "interaction_mean": 0.0,
+            "interaction_std": 0.0,
+            "max_synergy": 0.0,
+            "max_antagonism": 0.0,
+            "interaction_ci_low": 0.0,
+            "interaction_ci_high": 0.0,
+        }
+
+    plausible_mask = np.asarray([
+        bool(item.get("plausible", True)) for item in response
+    ], dtype=bool)
+    filtered = list(response) if plausible_mask.all() else [item for item, keep in zip(response, plausible_mask) if keep]
+    if not filtered:
+        filtered = list(response)
+
+    interactions = np.asarray([
+        float(item["interaction"]) for item in filtered
+    ], dtype=float)
+    if interactions.size == 0:
+        return {
+            "interaction_mean": 0.0,
+            "interaction_std": 0.0,
+            "max_synergy": 0.0,
+            "max_antagonism": 0.0,
+            "interaction_ci_low": 0.0,
+            "interaction_ci_high": 0.0,
+        }
+
+    ci_low, ci_high = float("nan"), float("nan")
+    has_uid = any("uid" in item for item in filtered)
+    if has_uid:
+        ci_low, ci_high = _interaction_cluster_interval(filtered, metric="interaction", n_boot=n_boot, random_seed=random_seed)
+    else:
+        std_values = np.asarray([
+            float(item.get("predicted_std", 0.0) or 0.0)
+            for item in filtered
+        ], dtype=float)
+        std_values = np.where(np.isfinite(std_values), std_values, 0.0)
+        if std_values.size > 0 and np.any(std_values > 0.0):
+            rng = np.random.default_rng(random_seed)
+            bootstrap_means = []
+            for _ in range(n_boot):
+                sampled = interactions + rng.normal(0.0, std_values)
+                bootstrap_means.append(float(np.mean(sampled)))
+            ci_low, ci_high = np.percentile(bootstrap_means, [2.5, 97.5])
+        else:
+            ci_low = float(interactions.mean())
+            ci_high = float(interactions.mean())
+
+    return {
+        "interaction_mean": float(interactions.mean()),
+        "interaction_std": float(interactions.std(ddof=0)),
+        "max_synergy": float(interactions.max()),
+        "max_antagonism": float(interactions.min()),
+        "interaction_ci_low": float(ci_low),
+        "interaction_ci_high": float(ci_high),
+    }
