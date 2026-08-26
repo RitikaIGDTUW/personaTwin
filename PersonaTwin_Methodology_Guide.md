@@ -116,7 +116,7 @@ graph TD
   * **Curve Fitting & Metric Extraction**: We sweep $\alpha$ over 21 steps, run them through the twin, and fit an uncertainty-weighted quadratic curve ($y = a\alpha^2 + b\alpha + c$) using the inverse predictive variance. From this, we extract:
     1. **Slope**: Current responsiveness (first derivative at $\alpha=0$).
     2. **Curvature**: Acceleration/diminishing returns (second derivative).
-    3. **Margin**: The minimum shift required to cross a clinical PAM threshold (e.g., target 8.0 for CES, 12.5 for StudentLife).
+    3. **Margin**: The minimum shift required to cross a model-estimated PAM reference point (e.g., pattern boundary 8.0 for CES, 12.5 for StudentLife) — a descriptive sensitivity diagnostic, not a clinical cutoff.
   * **Pairwise Interactions**: We perturb two directions simultaneously and compare the output to the sum of individual shifts. We filter out implausible joint states using a Mahalanobis distance cutoff (97.5th percentile of the training distribution) and construct participant-clustered bootstrap confidence intervals (CIs).
 
 ---
@@ -184,7 +184,7 @@ If your professor asks for proof of rigor or specific figures, refer to this tab
 ### 4. Defending the "Stage 4 Correction"
 > **Professor's Question**: "Why did you change the sensitivity engine from latent-space to input-space perturbation?"
 >
-> **Your Answer**: *"Perturbing the latent vector $z$ directly is mathematically easy, but the resulting changes have no real-world units (e.g. shifting $z$ by +0.5 has no physical meaning). By shifting the raw behavioral inputs $x$ (e.g. adding 1 hour to sleep) and re-running the model forward, the entire sensitivity landscape stays in real, clinical units that users and clinicians can interpret."*
+> **Your Answer**: *"Perturbing the latent vector $z$ directly is mathematically easy, but the resulting changes have no real-world units (e.g. shifting $z$ by +0.5 has no physical meaning). By shifting the raw behavioral inputs $x$ (e.g. adding 1 hour to sleep) and re-running the model forward, the entire sensitivity landscape stays in real-world physical units (e.g. hours of sleep, steps walked) that participants and researchers can interpret directly — without implying the outputs are clinical measurements."*
 
 ---
 
@@ -219,7 +219,7 @@ graph TD
     G2 --> H["6. Inverse-Variance Weighted Curve Fitting (fit_weighted_curve)"]
     H --> H1["Fit 2nd degree polynomial: y = a*alpha^2 + b*alpha + c<br/>using weights w = 1 / std^2"]
     H1 --> H2["Compute Slope (b) and Curvature (2a) at current state (alpha = 0)"]
-    H1 --> H3["Identify Margin (minimum alpha to cross clinical PAM threshold)"]
+    H1 --> H3["Identify Margin (minimum alpha to cross model-estimated PAM reference point)"]
     
     %% Bootstrapping and Output
     H2 & H3 --> I["7. Predictive Bootstrapping (bootstrap_curve_intervals)"]
@@ -258,7 +258,7 @@ You should explain these steps to your teacher to show the engineering rigor and
 
 3. **Step 3: Input-Space Perturbation (`perturb_window_for_direction`)**
    * *What it means:* We modify the **raw features** directly (like raw sleep hours) before passing them to the model, rather than modifying the model's internal hidden representations ($z$).
-   * *Why it's important:* Shifting internal layers has no real-world interpretation. By shifting raw inputs and passing them through the entire model, our results are reported in real physical units (like "an extra hour of sleep increases mood by $X$ points"), which is clinically and practically interpretable.
+   * *Why it's important:* Shifting internal layers has no real-world interpretation. By shifting raw inputs and passing them through the entire model, our results are reported in real physical units (like "an extra hour of sleep corresponds to a model-predicted mood change of $X$ points") — making the sensitivity profile practically interpretable and grounded, without implying clinical prescription.
 
 4. **Step 4: Batched Inference Forward Pass (`probe_direction`)**
    * *What it means:* We clone the user's 7-day behavior window 21 times, apply the 21 different alpha shifts, stack them into a single tensor batch, and run them forward through the personalized GRU model.
@@ -266,14 +266,14 @@ You should explain these steps to your teacher to show the engineering rigor and
 
 5. **Step 5: Coerce Predictions & Target Scaling (`_coerce_prediction`)**
    * *What it means:* The model outputs predictions in standardized values (z-scores). We use the training split's mean and standard deviation to convert these predictions back into original units (e.g. original PAM scale).
-   * *Why it's important:* It ensures the output metrics correspond directly to standard clinical scale numbers that clinicians understand.
+   * *Why it's important:* It ensures the output metrics are in original scale units (e.g. PAM values) rather than z-scores — making the sensitivity profile readable in the same units used to describe the data, without implying medical authority over those numbers.
 
 6. **Step 6: Inverse-Variance Weighted Curve Fitting (`fit_weighted_curve`)**
    * *What it means:* We fit a quadratic curve ($y = a\alpha^2 + b\alpha + c$) across the 21 prediction points. Crucially, each point is weighted by the inverse of its predictive variance ($w = 1/\sigma^2$).
    * *Why it's important (The Core Novelty):* If the model is highly uncertain about a simulated behavioral shift, that prediction point receives less weight in the curve fit. From this fitted curve, we calculate:
      * **Slope ($b$):** The participant's immediate mood responsiveness near their current behavioral baseline.
      * **Curvature ($2a$):** The rate of acceleration or diminishing returns (e.g., does extra sleep help less and less as it increases?).
-     * **Margin:** The exact amount of behavior shift needed to cross a target clinical threshold.
+     * **Margin:** The minimum behavior shift at which the model-estimated sensitivity curve crosses a chosen pattern-reference point (not a clinical prescription — a descriptive diagnostic of model-predicted responsiveness).
 
 7. **Step 7: Predictive Bootstrapping (`bootstrap_curve_intervals`)**
    * *What it means:* We resample the predictions using the model's own predicted standard deviation 200 times and recalculate the curves to establish 95% Confidence Intervals (CIs) for our slope and curvature.

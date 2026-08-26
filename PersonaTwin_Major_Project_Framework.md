@@ -90,8 +90,8 @@ For each direction v in V:
        S(v, α), unc(v, α) ← f(z')
   2. Fit smooth curve to {S(v, α)} across α
   3. Compute:
-       margin(v)    = min |α| such that S(v, α) crosses clinically 
-                       meaningful threshold τ
+       margin(v)    = min |α| such that S(v, α) crosses model-estimated
+                        threshold τ (a pattern reference point, not a clinical cutoff)
        slope(v)     = dS/dα at α=0 (current responsiveness)
        curvature(v) = d²S/dα² (diminishing/increasing returns)
   4. Store (margin, slope, curvature, uncertainty band) per direction
@@ -130,6 +130,13 @@ This directly extends GlyTwin's discrete "which behavioral change helps" into a 
 
 Dashboard per individual: current predicted state + uncertainty, and a **sensitivity profile panel** — bar/curve view per behavioral dimension showing margin/slope/curvature, so a user can see not just "more sleep helps" but "how much, how reliably, and whether returns diminish."
 
+**Dashboard language spec** (lock this in before building): all labels must use pattern/sensitivity framing, not clinical-alert framing. Concretely:
+- ✅ "Model-flagged low-mood pattern" — ❌ not "CRITICAL ALERT – LOW MOOD"
+- ✅ "crosses model-estimated threshold" — ❌ not "crosses safety limit"
+- ✅ "high sensitivity to sleep reduction detected" — ❌ not "early-warning system flags depressive/anxious episode"
+
+This is an **explanatory tool** that surfaces what the model predicts under behavioral scenarios — not a clinical monitoring or alerting system.
+
 ---
 
 ## 9. Suggested Timeline
@@ -149,3 +156,4 @@ Dashboard per individual: current predicted state + uncertainty, and a **sensiti
 - **Sensitivity curves may be noisy per individual** with limited longitudinal data per person → mitigate with uncertainty bands and bootstrap confidence, report honestly rather than overclaiming precision
 - **Reviewer asks "how is this different from GlyTwin/CALM-Net"** → Section 2's table answers this directly; keep it in the paper's related-work section verbatim in spirit
 - **Causal misreading risk** → keep your original document's explicit non-causal language throughout ("the model predicts a lower state under this scenario," never "this intervention reduces stress") — this was already correctly handled in your draft, don't lose it in revision
+- **Clinical-label drift risk** → dashboard and any written description must never use clinical-alert framing ("CRITICAL ALERT," "safety limit," "flags depressive/anxious episode"). Use pattern/sensitivity language throughout (see Section 8 language spec). This is an explanatory research tool, not a diagnostic or monitoring system — conflating the two creates ethical and regulatory problems and will be challenged in defense.

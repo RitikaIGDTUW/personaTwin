@@ -530,10 +530,13 @@ def profile_direction_pairs(
     target_mean: torch.Tensor | None = None,
     target_std: torch.Tensor | None = None,
     personalized: bool = False,
+    participant_index: dict[str, int] | None = None,
 ) -> list[dict[str, object]]:
     """Profile every available direction pair on real windows in a split."""
     if split_name not in artifact:
         raise KeyError(f"Unknown artifact split: {split_name}")
+    if personalized and participant_index is None:
+        raise ValueError("participant_index is required when personalized=True")
     available = [
         direction
         for direction in directions
@@ -544,7 +547,11 @@ def profile_direction_pairs(
     uids = artifact[split_name].get("uid")
     rows = []
     for index in range(limit):
-        participant_id = None if uids is None else uids[index]
+        raw_uid = None if uids is None else uids[index]
+        raw_uid = raw_uid.item() if torch.is_tensor(raw_uid) else raw_uid
+        embedding_id = None
+        if personalized and raw_uid is not None:
+            embedding_id = participant_index[str(raw_uid)]
         for pair_index, direction_a in enumerate(available):
             for direction_b in available[pair_index + 1:]:
                 response = probe_interaction(
@@ -561,11 +568,11 @@ def profile_direction_pairs(
                     target_mean=target_mean,
                     target_std=target_std,
                     personalized=personalized,
-                    participant_id=participant_id,
+                    participant_id=embedding_id,
                 )
                 rows.append({
                     "window_index": index,
-                    "uid": participant_id,
+                    "uid": raw_uid,
                     "direction_a": direction_a,
                     "direction_b": direction_b,
                     **summarize_interaction_response(response),
@@ -588,6 +595,8 @@ def profile_split(
     target_std: torch.Tensor | None = None,
     calibrated_std: torch.Tensor | float | None = None,
     batch_size: int = 32,
+    personalized: bool = False,
+    participant_index: dict[str, int] | None = None,
 ) -> list[dict[str, object]]:
     """Build one sensitivity row per direction and real window in a split.
 
@@ -596,6 +605,8 @@ def profile_split(
     """
     if split_name not in artifact:
         raise KeyError(f"Unknown artifact split: {split_name}")
+    if personalized and participant_index is None:
+        raise ValueError("participant_index is required when personalized=True")
     split = artifact[split_name]
     windows = split["X"]
     limit = len(windows) if max_windows is None else min(max_windows, len(windows))
@@ -618,7 +629,7 @@ def profile_split(
                 lower, upper = plausible_alpha_bounds(
                     artifact, feature_names, direction_map, direction
                 )
-                direction_alphas = default_direction_alphas(lower, upper, steps=21)
+                direction_alphas = default_direction_alphas(lower, upper, steps=101)
             else:
                 direction_alphas = [float(alpha) for alpha in alphas]
 
@@ -640,8 +651,20 @@ def profile_split(
                 flat = perturbed.reshape(
                     -1, perturbed.shape[2], perturbed.shape[3]
                 )
+                flat = perturbed.reshape(
+                    -1, perturbed.shape[2], perturbed.shape[3]
+                )
                 with torch.no_grad():
-                    prediction = model(flat)
+                    if personalized:
+                        batch_uids = uids[start:stop]
+                        batch_uids = batch_uids.tolist() if torch.is_tensor(batch_uids) else list(batch_uids)
+                        embedding_ids = [participant_index[str(uid)] for uid in batch_uids]
+                        participant_tensor = torch.tensor(
+                            embedding_ids, device=device, dtype=torch.long
+                        ).repeat_interleave(len(direction_alphas))
+                        prediction = model(flat, participant_tensor)
+                    else:
+                        prediction = model(flat)
                 mean, logvar = _coerce_prediction(
                     prediction, target_mean, target_std
                 )
@@ -896,6 +919,49 @@ def export_profiles(
 
     return rows_path, aggregates_path
 
+def export_interaction_profiles(
+    rows: Sequence[dict[str, object]],
+    aggregates: dict[str, dict[str, float]],
+    output_dir: str | Path,
+    prefix: str = "ces",
+) -> tuple[Path, Path]:
+    """Save per-window interaction profiles and aggregate summaries as CSV and JSON."""
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    rows_path = output_path / f"{prefix}_interaction_profiles.csv"
+    aggregates_path = output_path / f"{prefix}_interaction_aggregates.json"
+
+    with rows_path.open("w", newline="") as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=[
+                "window_index",
+                "uid",
+                "direction_a",
+                "direction_b",
+                "interaction_mean",
+                "interaction_std",
+                "max_synergy",
+                "max_antagonism",
+                "interaction_ci_low",
+                "interaction_ci_high",
+            ],
+            extrasaction="ignore",
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+
+    serializable = {
+        pair: {
+            key: (None if not np.isfinite(value) else value)
+            for key, value in summary.items()
+        }
+        for pair, summary in aggregates.items()
+    }
+    with aggregates_path.open("w") as file:
+        json.dump(serializable, file, indent=2, allow_nan=False)
+
+    return rows_path, aggregates_path
 
 def plot_sensitivity_results(
     aggregates: dict[str, dict[str, float]],
