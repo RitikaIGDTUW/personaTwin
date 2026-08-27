@@ -19,6 +19,7 @@ from src.model import UncertaintyPersonalizedGRU, UncertaintyPopulationGRU
 from src.sensitivity import (
     aggregate_interaction_profiles,
     aggregate_profiles,
+    export_continuous_profiles,
     export_interaction_profiles,
     export_profiles,
     participant_counts,
@@ -84,7 +85,7 @@ def main() -> None:
     target_std = train_targets.std(dim=0).clamp_min(1e-6)
 
     # Univariate slope/curvature/margin per direction
-    rows = profile_split(
+    rows, continuous_rows = profile_split(
         model=model,
         artifact=artifact,
         feature_names=feature_names,
@@ -97,7 +98,11 @@ def main() -> None:
     )
     aggregates = aggregate_profiles(rows)
     export_profiles(rows, aggregates, PROCESSED_DIR / "sensitivity", prefix=args.dataset)
-
+    export_continuous_profiles(
+        continuous_rows,
+        PROCESSED_DIR / "sensitivity",
+        prefix=args.dataset,
+    )
     # Pairwise interaction sensitivity
     interaction_rows = profile_direction_pairs(
         model=model,

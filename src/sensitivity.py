@@ -313,6 +313,10 @@ def probe_direction(
 
     if alphas is None:
         lower, upper = plausible_alpha_bounds(artifact, feature_names, direction_map, direction)
+        print(
+        f"[ALPHA] direction={direction}, "
+        f"min={lower:.4f}, max={upper:.4f}"
+        )
         alphas = default_direction_alphas(lower, upper, steps=21)
 
     window_tensor = torch.as_tensor(window, dtype=torch.float32).to(device)
@@ -597,7 +601,7 @@ def profile_split(
     batch_size: int = 32,
     personalized: bool = False,
     participant_index: dict[str, int] | None = None,
-) -> list[dict[str, object]]:
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     """Build one sensitivity row per direction and real window in a split.
 
     Windows and alpha perturbations are batched together so GPU execution is
@@ -618,6 +622,7 @@ def profile_split(
         device = first_parameter.device if first_parameter is not None else "cpu"
     device = torch.device(device)
     rows: list[dict[str, object]] = []
+    continuous_rows: list[dict[str, object]] = []
     model.eval()
 
     for direction in directions:
@@ -629,6 +634,11 @@ def profile_split(
                 lower, upper = plausible_alpha_bounds(
                     artifact, feature_names, direction_map, direction
                 )
+                print(
+                f"[ALPHA] direction={direction}, "
+                f"min={lower:.4f}, max={upper:.4f}"
+            )
+
                 direction_alphas = default_direction_alphas(lower, upper, steps=101)
             else:
                 direction_alphas = [float(alpha) for alpha in alphas]
@@ -681,13 +691,44 @@ def profile_split(
                     std_values = torch.full_like(means, float(torch.as_tensor(calibrated_std)))
                 for row_index in range(stop - start):
                     response = []
+
                     for alpha_index, alpha in enumerate(direction_alphas):
+                        predicted_mean = float(
+                            means[row_index, alpha_index].cpu()
+                        )
+
+                        predicted_std = (
+                            None
+                            if std_values is None
+                            else float(std_values[row_index, alpha_index].cpu())
+                        )
+
                         response.append({
-                            "alpha": alpha,
-                            "predicted_mean": float(means[row_index, alpha_index].cpu()),
-                            "predicted_std": None if std_values is None else float(std_values[row_index, alpha_index].cpu()),
+                            "alpha": float(alpha),
+                            "predicted_mean": predicted_mean,
+                            "predicted_std": predicted_std,
                         })
-                    summaries.append(summarize_direction_response(response, threshold))
+
+                        # Preserve the continuous sensitivity profile.
+                        window_index = start + row_index
+                        uid = (
+                            uids[window_index].item()
+                            if torch.is_tensor(uids)
+                            else uids[window_index]
+                        )
+
+                        continuous_rows.append({
+                            "window_index": window_index,
+                            "uid": str(uid),
+                            "direction": direction,
+                            "alpha": float(alpha),
+                            "predicted_mean": predicted_mean,
+                            "predicted_std": predicted_std,
+                        })
+
+                    summaries.append(
+                        summarize_direction_response(response, threshold)
+                    )
 
         for window_index, summary in enumerate(summaries):
             uid = uids[window_index].item() if torch.is_tensor(uids) else uids[window_index]
@@ -703,7 +744,7 @@ def profile_split(
                 "curvature_ci_low": None if summary is None else summary["curvature_ci_low"],
                 "curvature_ci_high": None if summary is None else summary["curvature_ci_high"],
             })
-    return rows
+    return rows, continuous_rows
 
 
 def _cluster_bootstrap_interval(
@@ -918,6 +959,34 @@ def export_profiles(
         json.dump(serializable, file, indent=2, allow_nan=False)
 
     return rows_path, aggregates_path
+
+def export_continuous_profiles(
+    rows: Sequence[dict[str, object]],
+    output_dir: str | Path,
+    prefix: str = "ces",
+) -> Path:
+    """Save continuous alpha-response sensitivity profiles as CSV."""
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    rows_path = output_path / f"{prefix}_continuous_sensitivity_profiles.csv"
+
+    with rows_path.open("w", newline="") as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=[
+                "window_index",
+                "uid",
+                "direction",
+                "alpha",
+                "predicted_mean",
+                "predicted_std",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+
+    return rows_path
 
 def export_interaction_profiles(
     rows: Sequence[dict[str, object]],
