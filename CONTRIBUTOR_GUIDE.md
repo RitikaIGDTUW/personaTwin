@@ -388,23 +388,33 @@ For StudentLife, the current mapping covers the 17 daily features across the fiv
 [done] StudentLife PAM sequence artifact
 [done] CES PAM sequence artifact
 [done] Sequence artifact audits
+[done] Population-level GRU baseline (StudentLife and CES)
+[done] Participant personalization layer (embedding-based, both datasets)
+[done] Predictive uncertainty head (population and personalized, both datasets)
+[done] Pre-sensitivity audit (mean-baseline comparison, interval coverage)
+[done] Step 0 data-validation audit (direction-map consistency, mobility/PAM
+       leakage check on real training data)
+[done] Sensitivity Engine: slope/curvature/margin with participant-clustered
+       bootstrap CIs, interpolated (non-quantized) margin, pairwise
+       interaction/synergy-antagonism detection, personalized-model
+       participant-embedding support
+[done] Sensitivity Engine structural verification protocol
+[done] StudentLife Sensitivity Engine run, fully verified (population +
+       personalized, univariate + interaction)
 ```
 
 ### Not yet implemented
 
 ```text
-[pending] Population-level GRU baseline
-[pending] Separate baseline evaluation for StudentLife and CES
-[pending] Participant personalization layer or embeddings
-[pending] Predictive uncertainty head
-[pending] Sensitivity Engine
-[pending] Margin/slope/curvature profiles
-[pending] Cross-dataset transfer/generalization experiment
+[pending] CES Sensitivity Engine run (code ready, not yet executed - GPU/Colab)
+[pending] Cross-dataset transfer/generalization write-up (limited to the four
+          directions CES and StudentLife share - CES has no social direction)
+[pending] Final combined sensitivity table (both datasets)
 [pending] Evaluation notebook and result plots
-[pending] Dashboard
+[pending] Twin/dashboard integration
 ```
 
-The original handoff markdown says some completed preprocessing items are still pending. That status section is now stale and should be interpreted together with the actual cached files and commands in this repository.
+The original handoff markdown says some completed preprocessing items are still pending. That status section is now stale and should be interpreted together with the actual cached files and commands in this repository. This section (Section 8) itself required a similar correction as of the Sensitivity Engine build-out - it previously listed the population baseline, personalization, uncertainty, and Sensitivity Engine as not yet implemented, which was no longer accurate.
 
 ---
 
@@ -514,15 +524,36 @@ If raw data or target logic changes, use `force=True` or `--force` for the affec
 
 ## 12. The Immediate Next Task
 
-The sequence pipeline is ready. The next contributor should implement the **population-level PAM GRU baseline** in a new model module, with a separate training/evaluation entry point for StudentLife and CES.
+The population baseline, personalization, uncertainty heads, and the
+Sensitivity Engine itself are all implemented and have been run and
+structurally verified on StudentLife (`python -m src.verify_sensitivity_engine
+studentlife` passes cleanly, including the interpolated-margin fix and the
+personalized-model participant-embedding path).
 
-The first baseline should be intentionally simple:
+The next task is narrower: run the same pipeline on CES.
 
-```text
-input:  seven days of normalized behavioral features
-model:  one shared GRU
-output: next-day PAM prediction
-loss:   mean squared error or mean absolute error
+```powershell
+python -m src.run_sensitivity ces --checkpoint data/processed/checkpoints/ces_uncertainty_population_gru.pt --max-windows 200
+python -m src.run_sensitivity ces --checkpoint data/processed/checkpoints/ces_uncertainty_personalized_gru.pt --personalized --max-windows 200
+python -m src.verify_sensitivity_engine ces
 ```
 
-Only after this baseline has a reproducible validation/test result should the project add personalization, uncertainty, and the Sensitivity Engine.
+CES is 570 features and 3,599 test windows, so this is meaningfully more
+compute than StudentLife's 59-window run - offload it to a GPU (Colab) rather
+than running the full sweep on CPU. The trained checkpoints
+(`ces_uncertainty_population_gru.pt`, `ces_uncertainty_personalized_gru.pt`)
+and the current `src/sensitivity.py` (with the interpolated-margin fix) must
+both be copied into whatever environment runs this - checkpoints are not in
+git, and an older copy of `sensitivity.py` without the interpolation fix will
+reproduce the margin-quantization issue already fixed on StudentLife.
+
+Once CES passes verification, remember: CES has no `social` direction (the
+raw data never captured conversation/call/SMS sensing), so it will correctly
+report only 4 directions where StudentLife reports 5. Do not force a
+cross-dataset comparison on `social` - report it as StudentLife-only, and
+limit direct CES-vs-StudentLife comparisons to sleep, activity, mobility,
+and screen.
+
+After both datasets are verified, the remaining work is the final combined
+sensitivity table, the cross-dataset write-up, and eventually integrating
+these outputs with the twin/dashboard layer - none of which are started yet.

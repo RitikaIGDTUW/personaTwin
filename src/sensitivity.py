@@ -401,12 +401,17 @@ def summarize_direction_response(
         random_seed=random_seed,
     )
 
-    crossing = [
-        float(abs(alpha))
-        for alpha, mean in zip(alphas, means)
-        if mean >= threshold
-    ]
-    margin = min(crossing) if crossing else float("inf")
+    order = np.argsort(alphas)
+    sorted_alphas = alphas[order]
+    sorted_means = means[order]
+
+    margin = float("inf")
+    for i in range(len(sorted_alphas) - 1):
+        a0, a1 = sorted_alphas[i], sorted_alphas[i + 1]
+        m0, m1 = sorted_means[i], sorted_means[i + 1]
+        if (m0 - threshold) * (m1 - threshold) <= 0 and m1 != m0:
+            crossing_alpha = a0 + (threshold - m0) * (a1 - a0) / (m1 - m0)
+            margin = min(margin, abs(float(crossing_alpha)))
 
     return {
         "slope": slope,
