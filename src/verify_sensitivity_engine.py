@@ -131,10 +131,19 @@ def verify_interaction(dataset: str) -> bool:
         return False
 
     df = pd.read_csv(profiles_path)
+    with open(aggregates_path) as f:
+        aggregates = json.load(f)
 
     all_ok &= check(
         "no NaN in interaction_mean",
         not df["interaction_mean"].isna().any(),
+    )
+    all_ok &= check(
+        "interaction aggregates contain numeric means",
+        all(
+            values.get("interaction_mean") is not None
+            for values in aggregates.values()
+        ),
     )
 
     n_directions = len(EXPECTED_DIRECTIONS[dataset])

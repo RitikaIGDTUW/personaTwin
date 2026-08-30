@@ -796,6 +796,8 @@ def _cluster_bootstrap_interval(
     by_participant: dict[str, list[float]] = {}
     for row in rows:
         value = row.get(metric)
+        if value is None and metric == "interaction":
+            value = row.get("interaction_mean")
         if value is None or not np.isfinite(float(value)):
             continue
         by_participant.setdefault(str(row["uid"]), []).append(float(value))
@@ -884,9 +886,10 @@ def aggregate_interaction_profiles(
         ]
         interaction_values = np.asarray(
             [
-                float(row["interaction"])
+                float(row.get("interaction", row.get("interaction_mean")))
                 for row in pair_rows
-                if row.get("interaction") is not None and np.isfinite(float(row["interaction"]))
+                if row.get("interaction", row.get("interaction_mean")) is not None
+                and np.isfinite(float(row.get("interaction", row.get("interaction_mean"))))
             ],
             dtype=float,
         )
@@ -1278,6 +1281,8 @@ def _interaction_cluster_interval(
     by_participant: dict[str, list[float]] = {}
     for row in rows:
         value = row.get(metric)
+        if value is None and metric == "interaction":
+            value = row.get("interaction_mean")
         if value is None or not np.isfinite(float(value)):
             continue
         uid = str(row.get("uid", "unknown"))
