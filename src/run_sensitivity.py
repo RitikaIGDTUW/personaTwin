@@ -74,6 +74,7 @@ def main() -> None:
                          help="PAM threshold used for margin/crossing calculations")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
+    output_prefix = f"{args.dataset}_personalized" if args.personalized else args.dataset
 
     if args.device == "cuda" and not torch.cuda.is_available():
         print("[WARN] CUDA requested but unavailable; using CPU instead")
@@ -109,11 +110,11 @@ def main() -> None:
         participant_index=idx,
     )
     aggregates = aggregate_profiles(rows)
-    export_profiles(rows, aggregates, PROCESSED_DIR / "sensitivity", prefix=args.dataset)
+    export_profiles(rows, aggregates, PROCESSED_DIR / "sensitivity", prefix=output_prefix)
     export_continuous_profiles(
         continuous_rows,
         PROCESSED_DIR / "sensitivity",
-        prefix=args.dataset,
+        prefix=output_prefix,
     )
     # Pairwise interaction sensitivity
     interaction_rows = profile_direction_pairs(
@@ -130,7 +131,10 @@ def main() -> None:
     )
     interaction_aggregates = aggregate_interaction_profiles(interaction_rows)
     export_interaction_profiles(
-        interaction_rows, interaction_aggregates, PROCESSED_DIR / "sensitivity", prefix=args.dataset
+        interaction_rows,
+        interaction_aggregates,
+        PROCESSED_DIR / "sensitivity",
+        prefix=output_prefix,
     )
 
     print(f"[{args.dataset}] wrote univariate + interaction profiles to "
