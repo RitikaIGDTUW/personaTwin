@@ -89,7 +89,8 @@ def main() -> None:
     print(f"[{args.dataset}] test set: {counts['n_windows']} windows, "
           f"{counts['n_participants']} distinct participants")
 
-    train_targets = artifact["train"]["y"].float()
+    device = torch.device(args.device)
+    train_targets = artifact["train"]["y"].float().to(device)
     target_mean = train_targets.mean(dim=0)
     target_std = train_targets.std(dim=0).clamp_min(1e-6)
 
