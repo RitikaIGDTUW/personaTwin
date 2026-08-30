@@ -138,6 +138,7 @@ def verify_interaction(dataset: str) -> bool:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset", choices=["studentlife", "ces"])
+    parser.add_argument("--device", type=str, default="cpu")
     args = parser.parse_args()
 
     uni_ok = verify_univariate(args.dataset)
