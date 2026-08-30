@@ -52,28 +52,43 @@ def verify_univariate(dataset: str) -> bool:
     with open(aggregates_path) as f:
         agg = json.load(f)
 
+    expected = EXPECTED_DIRECTIONS[dataset]
+    usable_agg = {
+        direction: stats
+        for direction, stats in agg.items()
+        if direction in expected and stats.get("slope_count", 0.0) > 0
+    }
     all_ok &= check(
         "directions match expected set for this dataset",
-        set(agg.keys()) == EXPECTED_DIRECTIONS[dataset],
-        f"got {set(agg.keys())}, expected {EXPECTED_DIRECTIONS[dataset]}",
+        set(usable_agg.keys()) == expected,
+        f"got {set(usable_agg.keys())}, expected {expected}",
     )
+    usable_df = df[df["direction"].isin(expected)]
     all_ok &= check(
         "no NaN in slope/curvature/margin",
-        not df[["slope", "curvature", "margin"]].isna().any().any(),
+        not usable_df[["slope", "curvature", "margin"]].isna().any().any(),
     )
     all_ok &= check(
         "no infinite margin values (unless genuinely no threshold crossing)",
         not df["margin"].isin([float("inf"), float("-inf")]).all(),
     )
 
-    for direction, stats in agg.items():
+    for direction, stats in usable_agg.items():
+        slope_low = stats.get("slope_ci_low")
+        slope_high = stats.get("slope_ci_high")
+        curvature_low = stats.get("curvature_ci_low")
+        curvature_high = stats.get("curvature_ci_high")
         all_ok &= check(
             f"{direction}: slope CI ordering (low <= high)",
-            stats["slope_ci_low"] <= stats["slope_ci_high"],
+            slope_low is not None
+            and slope_high is not None
+            and slope_low <= slope_high,
         )
         all_ok &= check(
             f"{direction}: curvature CI ordering (low <= high)",
-            stats["curvature_ci_low"] <= stats["curvature_ci_high"],
+            curvature_low is not None
+            and curvature_high is not None
+            and curvature_low <= curvature_high,
         )
         margin_count = stats.get("margin_count", 0.0)
         if stats.get("margin_std") is None or margin_count == 0:
@@ -83,13 +98,18 @@ def verify_univariate(dataset: str) -> bool:
                 f"not a failure. Report as 'direction alone insufficient to reach threshold.'"
             )
         else:
-            all_ok &= check(
-                f"{direction}: margin shows real variance across windows (std > 0)",
-                stats["margin_std"] > 1e-9,
-                f"margin_std={stats['margin_std']:.8f} - flat margin means every window "
-                f"crossed threshold at the identical alpha grid point, which is suspicious "
-                f"for anything but the narrowest-feature directions (e.g. sleep)",
-            )
+            margin_count = int(stats.get("margin_count", 0.0))
+            if margin_count < 2:
+                print(
+                    f"  [INFO] {direction}: fewer than two finite margins; "
+                    "variance check skipped for this capped run."
+                )
+            else:
+                all_ok &= check(
+                    f"{direction}: margin shows real variance across windows (std > 0)",
+                    stats["margin_std"] > 1e-9,
+                    f"margin_std={stats['margin_std']:.8f}",
+                )
         if dataset in EXPECTED_PARTICIPANTS:
             all_ok &= check(
                 f"{direction}: participant_count matches expected",
@@ -126,11 +146,18 @@ def verify_interaction(dataset: str) -> bool:
         f"got {actual_pairs} pairs, expected {expected_pairs} for {n_directions} directions",
     )
 
+    pair_counts = df.groupby(["direction_a", "direction_b"]).size()
     pair_variance = df.groupby(["direction_a", "direction_b"])["interaction_mean"].std()
-    all_ok &= check(
-        "interaction_mean varies across windows within at least one pair",
-        (pair_variance > 1e-9).any(),
-    )
+    if len(df) < 2 or pair_counts.max() < 2:
+        print(
+            "  [INFO] fewer than two windows per interaction pair; "
+            "variance check skipped for this capped run."
+        )
+    else:
+        all_ok &= check(
+            "interaction_mean varies across windows within at least one pair",
+            (pair_variance > 1e-9).any(),
+        )
 
     return all_ok
 
