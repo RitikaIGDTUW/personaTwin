@@ -313,6 +313,10 @@ def probe_direction(
 
     if alphas is None:
         lower, upper = plausible_alpha_bounds(artifact, feature_names, direction_map, direction)
+        print(
+        f"[ALPHA] direction={direction}, "
+        f"min={lower:.4f}, max={upper:.4f}"
+        )
         alphas = default_direction_alphas(lower, upper, steps=21)
 
     window_tensor = torch.as_tensor(window, dtype=torch.float32).to(device)
@@ -397,12 +401,17 @@ def summarize_direction_response(
         random_seed=random_seed,
     )
 
-    crossing = [
-        float(abs(alpha))
-        for alpha, mean in zip(alphas, means)
-        if mean >= threshold
-    ]
-    margin = min(crossing) if crossing else float("inf")
+    order = np.argsort(alphas)
+    sorted_alphas = alphas[order]
+    sorted_means = means[order]
+
+    margin = float("inf")
+    for i in range(len(sorted_alphas) - 1):
+        a0, a1 = sorted_alphas[i], sorted_alphas[i + 1]
+        m0, m1 = sorted_means[i], sorted_means[i + 1]
+        if (m0 - threshold) * (m1 - threshold) <= 0 and m1 != m0:
+            crossing_alpha = a0 + (threshold - m0) * (a1 - a0) / (m1 - m0)
+            margin = min(margin, abs(float(crossing_alpha)))
 
     return {
         "slope": slope,
@@ -530,10 +539,13 @@ def profile_direction_pairs(
     target_mean: torch.Tensor | None = None,
     target_std: torch.Tensor | None = None,
     personalized: bool = False,
+    participant_index: dict[str, int] | None = None,
 ) -> list[dict[str, object]]:
     """Profile every available direction pair on real windows in a split."""
     if split_name not in artifact:
         raise KeyError(f"Unknown artifact split: {split_name}")
+    if personalized and participant_index is None:
+        raise ValueError("participant_index is required when personalized=True")
     available = [
         direction
         for direction in directions
@@ -544,7 +556,11 @@ def profile_direction_pairs(
     uids = artifact[split_name].get("uid")
     rows = []
     for index in range(limit):
-        participant_id = None if uids is None else uids[index]
+        raw_uid = None if uids is None else uids[index]
+        raw_uid = raw_uid.item() if torch.is_tensor(raw_uid) else raw_uid
+        embedding_id = None
+        if personalized and raw_uid is not None:
+            embedding_id = participant_index[str(raw_uid)]
         for pair_index, direction_a in enumerate(available):
             for direction_b in available[pair_index + 1:]:
                 response = probe_interaction(
@@ -561,11 +577,11 @@ def profile_direction_pairs(
                     target_mean=target_mean,
                     target_std=target_std,
                     personalized=personalized,
-                    participant_id=participant_id,
+                    participant_id=embedding_id,
                 )
                 rows.append({
                     "window_index": index,
-                    "uid": participant_id,
+                    "uid": raw_uid,
                     "direction_a": direction_a,
                     "direction_b": direction_b,
                     **summarize_interaction_response(response),
@@ -588,7 +604,9 @@ def profile_split(
     target_std: torch.Tensor | None = None,
     calibrated_std: torch.Tensor | float | None = None,
     batch_size: int = 32,
-) -> list[dict[str, object]]:
+    personalized: bool = False,
+    participant_index: dict[str, int] | None = None,
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     """Build one sensitivity row per direction and real window in a split.
 
     Windows and alpha perturbations are batched together so GPU execution is
@@ -596,6 +614,8 @@ def profile_split(
     """
     if split_name not in artifact:
         raise KeyError(f"Unknown artifact split: {split_name}")
+    if personalized and participant_index is None:
+        raise ValueError("participant_index is required when personalized=True")
     split = artifact[split_name]
     windows = split["X"]
     limit = len(windows) if max_windows is None else min(max_windows, len(windows))
@@ -607,6 +627,7 @@ def profile_split(
         device = first_parameter.device if first_parameter is not None else "cpu"
     device = torch.device(device)
     rows: list[dict[str, object]] = []
+    continuous_rows: list[dict[str, object]] = []
     model.eval()
 
     for direction in directions:
@@ -618,7 +639,12 @@ def profile_split(
                 lower, upper = plausible_alpha_bounds(
                     artifact, feature_names, direction_map, direction
                 )
-                direction_alphas = default_direction_alphas(lower, upper, steps=21)
+                print(
+                f"[ALPHA] direction={direction}, "
+                f"min={lower:.4f}, max={upper:.4f}"
+            )
+
+                direction_alphas = default_direction_alphas(lower, upper, steps=101)
             else:
                 direction_alphas = [float(alpha) for alpha in alphas]
 
@@ -640,8 +666,20 @@ def profile_split(
                 flat = perturbed.reshape(
                     -1, perturbed.shape[2], perturbed.shape[3]
                 )
+                flat = perturbed.reshape(
+                    -1, perturbed.shape[2], perturbed.shape[3]
+                )
                 with torch.no_grad():
-                    prediction = model(flat)
+                    if personalized:
+                        batch_uids = uids[start:stop]
+                        batch_uids = batch_uids.tolist() if torch.is_tensor(batch_uids) else list(batch_uids)
+                        embedding_ids = [participant_index[str(uid)] for uid in batch_uids]
+                        participant_tensor = torch.tensor(
+                            embedding_ids, device=device, dtype=torch.long
+                        ).repeat_interleave(len(direction_alphas))
+                        prediction = model(flat, participant_tensor)
+                    else:
+                        prediction = model(flat)
                 mean, logvar = _coerce_prediction(
                     prediction, target_mean, target_std
                 )
@@ -658,13 +696,44 @@ def profile_split(
                     std_values = torch.full_like(means, float(torch.as_tensor(calibrated_std)))
                 for row_index in range(stop - start):
                     response = []
+
                     for alpha_index, alpha in enumerate(direction_alphas):
+                        predicted_mean = float(
+                            means[row_index, alpha_index].cpu()
+                        )
+
+                        predicted_std = (
+                            None
+                            if std_values is None
+                            else float(std_values[row_index, alpha_index].cpu())
+                        )
+
                         response.append({
-                            "alpha": alpha,
-                            "predicted_mean": float(means[row_index, alpha_index].cpu()),
-                            "predicted_std": None if std_values is None else float(std_values[row_index, alpha_index].cpu()),
+                            "alpha": float(alpha),
+                            "predicted_mean": predicted_mean,
+                            "predicted_std": predicted_std,
                         })
-                    summaries.append(summarize_direction_response(response, threshold))
+
+                        # Preserve the continuous sensitivity profile.
+                        window_index = start + row_index
+                        uid = (
+                            uids[window_index].item()
+                            if torch.is_tensor(uids)
+                            else uids[window_index]
+                        )
+
+                        continuous_rows.append({
+                            "window_index": window_index,
+                            "uid": str(uid),
+                            "direction": direction,
+                            "alpha": float(alpha),
+                            "predicted_mean": predicted_mean,
+                            "predicted_std": predicted_std,
+                        })
+
+                    summaries.append(
+                        summarize_direction_response(response, threshold)
+                    )
 
         for window_index, summary in enumerate(summaries):
             uid = uids[window_index].item() if torch.is_tensor(uids) else uids[window_index]
@@ -680,7 +749,7 @@ def profile_split(
                 "curvature_ci_low": None if summary is None else summary["curvature_ci_low"],
                 "curvature_ci_high": None if summary is None else summary["curvature_ci_high"],
             })
-    return rows
+    return rows, continuous_rows
 
 
 def _cluster_bootstrap_interval(
@@ -896,6 +965,77 @@ def export_profiles(
 
     return rows_path, aggregates_path
 
+def export_continuous_profiles(
+    rows: Sequence[dict[str, object]],
+    output_dir: str | Path,
+    prefix: str = "ces",
+) -> Path:
+    """Save continuous alpha-response sensitivity profiles as CSV."""
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    rows_path = output_path / f"{prefix}_continuous_sensitivity_profiles.csv"
+
+    with rows_path.open("w", newline="") as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=[
+                "window_index",
+                "uid",
+                "direction",
+                "alpha",
+                "predicted_mean",
+                "predicted_std",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+
+    return rows_path
+
+def export_interaction_profiles(
+    rows: Sequence[dict[str, object]],
+    aggregates: dict[str, dict[str, float]],
+    output_dir: str | Path,
+    prefix: str = "ces",
+) -> tuple[Path, Path]:
+    """Save per-window interaction profiles and aggregate summaries as CSV and JSON."""
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    rows_path = output_path / f"{prefix}_interaction_profiles.csv"
+    aggregates_path = output_path / f"{prefix}_interaction_aggregates.json"
+
+    with rows_path.open("w", newline="") as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=[
+                "window_index",
+                "uid",
+                "direction_a",
+                "direction_b",
+                "interaction_mean",
+                "interaction_std",
+                "max_synergy",
+                "max_antagonism",
+                "interaction_ci_low",
+                "interaction_ci_high",
+            ],
+            extrasaction="ignore",
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+
+    serializable = {
+        pair: {
+            key: (None if not np.isfinite(value) else value)
+            for key, value in summary.items()
+        }
+        for pair, summary in aggregates.items()
+    }
+    with aggregates_path.open("w") as file:
+        json.dump(serializable, file, indent=2, allow_nan=False)
+
+    return rows_path, aggregates_path
 
 def plot_sensitivity_results(
     aggregates: dict[str, dict[str, float]],

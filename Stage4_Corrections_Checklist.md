@@ -1,5 +1,37 @@
 # Stage 4 — Technical Corrections Checklist
 
+> **Status update:** Items 1, 3, 4, and 5 are resolved in code. Item 2 is
+> resolved by construction (alpha bounds have always been computed
+> per-direction from real training data via `plausible_alpha_bounds` in
+> `src/sensitivity.py`, not hardcoded). Item 6 (framing) still needs to be
+> written into the methods section - not a code task.
+>
+> - Items 1 & 3: see `src/step0_audit_checks.py`. Real finding: CES mobility
+>   uses semantic dwell-time/distance features (`loc_home_still`,
+>   `loc_dist_ep_*`), StudentLife mobility uses raw GPS sample density and
+>   location-count variety - report mobility per-dataset, not as a single
+>   shared construct. CES screen (`screen_unlock_duration`, time phone is
+>   ON) and StudentLife screen (`phonelock_duration`, time phone is LOCKED)
+>   are plausibly near-inverses of each other - this is the likely
+>   explanation for any screen-time sign flip between datasets, alongside
+>   small-sample noise on StudentLife's 59-window test set. No leakage
+>   found: max |correlation| between any mobility feature and PAM was
+>   ~0.10-0.16 on real training data, well under the 0.6-0.7 threshold.
+> - Item 4: `participant_counts()` in `src/sensitivity.py`, printed at the
+>   start of every `run_sensitivity.py` run.
+> - Item 5: `fit_weighted_curve` and participant-clustered bootstrap CIs
+>   (`_cluster_bootstrap_interval`) are implemented in `src/sensitivity.py`
+>   and used for both slope and curvature in every aggregate output.
+> - Additional fix beyond this checklist's original scope: margin was
+>   initially quantized to the nearest point on a fixed alpha grid, which
+>   collapsed to identical values across many windows (most visibly on
+>   StudentLife's `sleep` direction, the narrowest-feature direction).
+>   Fixed by linearly interpolating the exact threshold-crossing alpha
+>   between grid points instead of snapping to the nearest one.
+> - Verified end-to-end on StudentLife with
+>   `python -m src.verify_sensitivity_engine studentlife` (all checks pass).
+>   CES run is pending.
+
 Work through in this order. Items 1-2 determine whether your current
 results are trustworthy at all; do these before anything else, including
 before showing the current numbers to anyone.

@@ -134,18 +134,87 @@ Completed:
 - Behavioral direction mapping
 - Leakage-safe StudentLife and CES sequence artifacts
 - Sequence artifact audits
+- Population and personalized PAM GRU baselines (both datasets)
+- Predictive uncertainty heads (population and personalized, both datasets)
+- Pre-sensitivity audit (model vs. mean baseline, interval coverage)
+- Step 0 data-validation audit: direction-map consistency check and
+  mobility/PAM leakage check on real training data (see
+  `src/step0_audit_checks.py`)
+- Sensitivity Engine core: continuous model-predicted slope, curvature,
+  and margin profiles per behavioral direction, with participant-clustered
+  bootstrap confidence intervals (`src/sensitivity.py`, `src/run_sensitivity.py`)
+- Pairwise/interaction sensitivity across behavioral direction pairs
+  (synergy/antagonism detection)
+- Personalized-model participant-embedding support in the Sensitivity Engine
+- Interpolated margin computation (exact threshold-crossing alpha via linear
+  interpolation between grid points, rather than snapping to the nearest
+  alpha grid value)
+- Structural verification protocol for Sensitivity Engine outputs
+  (`src/verify_sensitivity_engine.py`)
+- StudentLife Sensitivity Engine run: fully executed and verified
+  (population + personalized, univariate + interaction). Sleep's margin is
+  correctly `inf` for all windows — sleep alone does not push predicted PAM
+  across threshold within its plausible bounds; this is a validated finding,
+  not a defect.
 
 Next:
 
-- Population PAM GRU baseline
-- Separate StudentLife and CES evaluation
-- Participant personalization
-- Predictive uncertainty
-- Continuous model-predicted sensitivity profiles
-- Margin, slope, and curvature analysis
+- CES Sensitivity Engine run (population + personalized, univariate +
+  interaction) — code is ready and verified on StudentLife, but CES itself
+  has not yet been executed (pending GPU/Colab run)
+- Verify CES output with `src/verify_sensitivity_engine.py` once available
+- Note: CES has no `social` direction (0 features — this dataset never
+  captured conversation/call/SMS sensing). Cross-dataset comparisons are
+  limited to the four directions CES and StudentLife share: sleep, activity,
+  mobility, screen.
+- Final sensitivity table combining both datasets, with per-dataset
+  participant/window counts and small-N caveats for StudentLife (N=23
+  participants, 59 test windows)
+- Integrate Sensitivity Engine outputs with the twin/dashboard layer
+  (not yet started)
 
 The Sensitivity Engine must describe model-predicted sensitivity, not causal
 effects.
+
+## Running the Sensitivity Engine
+
+Once uncertainty checkpoints exist for a dataset, run the Step 0 audit first,
+then the engine itself, then verify the output:
+
+```powershell
+python -m src.step0_audit_checks
+
+python -m src.run_sensitivity studentlife --checkpoint data/processed/checkpoints/studentlife_uncertainty_population_gru.pt
+python -m src.run_sensitivity studentlife --checkpoint data/processed/checkpoints/studentlife_uncertainty_personalized_gru.pt --personalized
+
+python -m src.verify_sensitivity_engine studentlife
+```
+
+For CES, cap the interaction sweep since it has 570 features and 3,599 test
+windows:
+
+```powershell
+python -m src.run_sensitivity ces --checkpoint data/processed/checkpoints/ces_uncertainty_population_gru.pt --max-windows 200
+python -m src.run_sensitivity ces --checkpoint data/processed/checkpoints/ces_uncertainty_personalized_gru.pt --personalized --max-windows 200
+
+python -m src.verify_sensitivity_engine ces
+```
+
+Output files land in `data/processed/sensitivity/`:
+
+```text
+{dataset}_sensitivity_profiles.csv
+{dataset}_sensitivity_aggregates.json
+{dataset}_interaction_profiles.csv
+{dataset}_interaction_aggregates.json
+```
+
+`verify_sensitivity_engine.py` checks file existence, absence of NaN values,
+correct direction sets per dataset, CI ordering, and real (non-degenerate)
+variance in margin and interaction values. A clean pass means the output is
+structurally sound — it does not mean the substantive results are correct;
+slope/curvature signs and magnitudes should still be reviewed against
+domain expectations before being reported.
 
 ## Train the Baseline GRU
 
