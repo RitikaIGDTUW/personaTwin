@@ -30,6 +30,7 @@ def build_ces_model_df(force: bool = False) -> pd.DataFrame:
     """
     def _build():
         ces = get_ces_tables()
+        print("Available keys in ces:", ces.keys())
         ema = ces["general_ema"].copy()
 
         target_df = ema[["uid", "day"] + CES_TARGETS].copy()
