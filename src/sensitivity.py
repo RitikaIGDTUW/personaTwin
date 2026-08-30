@@ -151,6 +151,7 @@ def perturb_window_for_direction(
     direction_map: dict[str, list[str]],
     direction: str,
     alpha: float,
+    feature_sd: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Add a direction-specific alpha perturbation to a real input window."""
     tensor = torch.as_tensor(window, dtype=torch.float32)
@@ -161,11 +162,12 @@ def perturb_window_for_direction(
     if not indices:
         return tensor.clone()
 
-    train_x = artifact.get("train", {}).get("X")
-    if train_x is None:
-        raise KeyError("artifact['train']['X'] is required for directional perturbations")
-    train_x = train_x.float()
-    feature_sd = train_x[:, :, indices].std(dim=(0, 1), unbiased=False).clamp_min(1e-6)
+    if feature_sd is None:
+        train_x = artifact.get("train", {}).get("X")
+        if train_x is None:
+            raise KeyError("artifact['train']['X'] is required for directional perturbations")
+        train_x = train_x.float()
+        feature_sd = train_x[:, :, indices].std(dim=(0, 1), unbiased=False).clamp_min(1e-6)
 
     output = tensor.clone()
     if output.dim() == 2:
@@ -236,11 +238,15 @@ def _joint_plausibility_check(
     direction_map: dict[str, list[str]],
     direction_a: str,
     direction_b: str,
+    stats: tuple[np.ndarray, np.ndarray, float] | None = None,
 ) -> tuple[bool, float, float, float]:
     """Return whether a joint perturbation is inside the pair's empirical training range."""
-    mean_vec, covariance, threshold = _pair_plausibility_stats(
-        artifact, feature_names, direction_map, direction_a, direction_b
-    )
+    if stats is None:
+        stats = _pair_plausibility_stats(
+            artifact, feature_names, direction_map, direction_a, direction_b
+        )
+    mean_vec, covariance, threshold = stats
+    inverse_covariance = np.linalg.pinv(covariance)
     if threshold <= 0.0:
         return True, 0.0, float(mean_vec[0]), float(mean_vec[1])
     current_vec = np.asarray([
@@ -248,7 +254,7 @@ def _joint_plausibility_check(
         _direction_score(perturbation, direction_feature_indices(feature_names, direction_map, direction_b)),
     ], dtype=float)
     delta = current_vec - mean_vec
-    mahalanobis = float(delta.T @ np.linalg.pinv(covariance) @ delta)
+    mahalanobis = float(delta.T @ inverse_covariance @ delta)
     return mahalanobis <= threshold, mahalanobis, threshold, float(mean_vec[0])
 
 
@@ -315,7 +321,8 @@ def probe_direction(
         lower, upper = plausible_alpha_bounds(artifact, feature_names, direction_map, direction)
         print(
         f"[ALPHA] direction={direction}, "
-        f"min={lower:.4f}, max={upper:.4f}"
+        f"min={lower:.4f}, max={upper:.4f}",
+        flush=True,
         )
         alphas = default_direction_alphas(lower, upper, steps=21)
 
@@ -551,16 +558,37 @@ def profile_direction_pairs(
         for direction in directions
         if direction_feature_indices(feature_names, direction_map, direction)
     ]
+    pair_count = sum(len(available) - idx - 1 for idx in range(len(available)))
     windows = artifact[split_name]["X"]
     limit = len(windows) if max_windows is None else min(max_windows, len(windows))
+    print(
+        f"[interaction] starting {limit} windows across {len(available)} directions "
+        f"and {pair_count} direction pairs",
+        flush=True,
+    )
     uids = artifact[split_name].get("uid")
     rows = []
+    train_x = artifact["train"]["X"].float()
+    feature_sds = {
+        direction: train_x[:, :, direction_feature_indices(
+            feature_names, direction_map, direction
+        )].std(dim=(0, 1), unbiased=False).clamp_min(1e-6)
+        for direction in available
+    }
+    pair_stats = {
+        (direction_a, direction_b): _pair_plausibility_stats(
+            artifact, feature_names, direction_map, direction_a, direction_b
+        )
+        for pair_index, direction_a in enumerate(available)
+        for direction_b in available[pair_index + 1:]
+    }
     for index in range(limit):
         raw_uid = None if uids is None else uids[index]
         raw_uid = raw_uid.item() if torch.is_tensor(raw_uid) else raw_uid
         embedding_id = None
         if personalized and raw_uid is not None:
             embedding_id = participant_index[str(raw_uid)]
+        pair_index = 0
         for pair_index, direction_a in enumerate(available):
             for direction_b in available[pair_index + 1:]:
                 response = probe_interaction(
@@ -578,6 +606,8 @@ def profile_direction_pairs(
                     target_std=target_std,
                     personalized=personalized,
                     participant_id=embedding_id,
+                    feature_sds=feature_sds,
+                    plausibility_stats=pair_stats[(direction_a, direction_b)],
                 )
                 rows.append({
                     "window_index": index,
@@ -586,6 +616,12 @@ def profile_direction_pairs(
                     "direction_b": direction_b,
                     **summarize_interaction_response(response),
                 })
+        if (index + 1) % max(1, limit // 10) == 0 or index == limit - 1:
+            print(
+                f"[interaction] processed {index + 1}/{limit} windows "
+                f"({len(rows)} rows so far)",
+                flush=True,
+            )
     return rows
 
 
@@ -641,7 +677,8 @@ def profile_split(
                 )
                 print(
                 f"[ALPHA] direction={direction}, "
-                f"min={lower:.4f}, max={upper:.4f}"
+                f"min={lower:.4f}, max={upper:.4f}",
+                flush=True,
             )
 
                 direction_alphas = default_direction_alphas(lower, upper, steps=101)
@@ -662,9 +699,6 @@ def profile_split(
                 ).clone()
                 perturbed[:, :, :, indices] += (
                     alpha_tensor[None, :, None, None] * feature_sd[None, None, None, :]
-                )
-                flat = perturbed.reshape(
-                    -1, perturbed.shape[2], perturbed.shape[3]
                 )
                 flat = perturbed.reshape(
                     -1, perturbed.shape[2], perturbed.shape[3]
@@ -1101,6 +1135,8 @@ def probe_interaction(
     target_std: torch.Tensor | None = None,
     personalized: bool = False,
     participant_id: int | str | None = None,
+    feature_sds: dict[str, torch.Tensor] | None = None,
+    plausibility_stats: tuple[np.ndarray, np.ndarray, float] | None = None,
 ) -> list[dict[str, float | None]]:
     """Measure joint input-space sensitivity for a pair of directions.
 
@@ -1149,6 +1185,7 @@ def probe_interaction(
             direction_map,
             direction_a,
             alpha_a,
+            None if feature_sds is None else feature_sds[direction_a],
         )
         changed = perturb_window_for_direction(
             changed,
@@ -1157,6 +1194,7 @@ def probe_interaction(
             direction_map,
             direction_b,
             alpha_b,
+            None if feature_sds is None else feature_sds[direction_b],
         )
         perturbed.append(changed)
     inputs = torch.cat(perturbed, dim=0).to(device)
@@ -1198,12 +1236,14 @@ def probe_interaction(
                 direction_map,
                 direction_a,
                 alpha_a,
+                None if feature_sds is None else feature_sds[direction_a],
             ),
             artifact,
             feature_names,
             direction_map,
             direction_b,
             alpha_b,
+            None if feature_sds is None else feature_sds[direction_b],
         )
         plausible, mahalanobis, threshold, _ = _joint_plausibility_check(
             perturbed_window,
@@ -1212,6 +1252,7 @@ def probe_interaction(
             direction_map,
             direction_a,
             direction_b,
+            stats=plausibility_stats,
         )
         results.append({
             "alpha_a": alpha_a,
