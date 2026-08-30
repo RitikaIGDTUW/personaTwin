@@ -3,6 +3,27 @@
 
 ---
 
+> **Implementation status (read before presenting this guide to anyone):**
+>
+> - The Sensitivity Engine described in Sections 3-4 and 7 is implemented,
+>   bug-fixed, and structurally verified end-to-end on **StudentLife only**
+>   (`python -m src.verify_sensitivity_engine studentlife` passes). CES has
+>   not yet been run through the Sensitivity Engine.
+> - Two real bugs found and fixed since this guide's numbers were written:
+>   (1) the personalized model's participant embedding wasn't being passed
+>   through at all in the univariate path, and was being passed the wrong
+>   (unmapped) index in the interaction path; (2) margin was quantized to
+>   the nearest of 21 fixed alpha-grid points, which collapsed to identical
+>   values across many windows (most visibly on `sleep`). Margin is now
+>   computed via linear interpolation between grid points on a 101-point
+>   grid, giving a continuous estimate instead of a quantized one.
+> - **Section 5's numbers below predate both fixes and predate any real CES
+>   run.** They should be treated as illustrative placeholders, not results
+>   to present. See the warning at the top of Section 5 for what to
+>   regenerate before using this table anywhere.
+
+---
+
 ## 1. Executive Summary & Thesis
 **PersonaTwin** is a personalized digital twin framework that models individual mental-state dynamics using multimodal behavioral sensing data. 
 
@@ -113,10 +134,10 @@ graph TD
   * **Input-Space Perturbation (The Stage 4 Fix)**: Historically, models shifted internal representations ($z$). We corrected this to perturb the **actual input behaviors ($x$)** in physical units (e.g. adding hours of sleep), then passed them through the model. This preserves interpretability.
   * **Behavioral Directions**: Features are grouped into 5 domains: Sleep, Activity, Social, Mobility, and Screen.
   * **Empirical Plausibility Guard**: To prevent the engine from simulating impossible behaviors (e.g., 30 hours of screen time), shifts ($\alpha$) are restricted to the empirical min/max values observed in the training cohort.
-  * **Curve Fitting & Metric Extraction**: We sweep $\alpha$ over 21 steps, run them through the twin, and fit an uncertainty-weighted quadratic curve ($y = a\alpha^2 + b\alpha + c$) using the inverse predictive variance. From this, we extract:
+  * **Curve Fitting & Metric Extraction**: We sweep $\alpha$ over 101 steps (increased from an initial 21-step grid after the coarser grid was found to quantize margin to identical values across many windows), run them through the twin, and fit an uncertainty-weighted quadratic curve ($y = a\alpha^2 + b\alpha + c$) using the inverse predictive variance. From this, we extract:
     1. **Slope**: Current responsiveness (first derivative at $\alpha=0$).
     2. **Curvature**: Acceleration/diminishing returns (second derivative).
-    3. **Margin**: The minimum shift required to cross a model-estimated PAM reference point (e.g., pattern boundary 8.0 for CES, 12.5 for StudentLife) — a descriptive sensitivity diagnostic, not a clinical cutoff.
+    3. **Margin**: The minimum shift required to cross a model-estimated PAM reference point (threshold 8.0 for both datasets), computed by linearly interpolating the exact crossing alpha between the two bracketing grid points rather than snapping to the nearest grid value — a descriptive sensitivity diagnostic, not a clinical cutoff. When a direction never crosses the threshold within its plausible bounds (observed for StudentLife's `sleep` direction), margin is correctly reported as infinite for that window rather than a spurious finite value.
   * **Pairwise Interactions**: We perturb two directions simultaneously and compare the output to the sum of individual shifts. We filter out implausible joint states using a Mahalanobis distance cutoff (97.5th percentile of the training distribution) and construct participant-clustered bootstrap confidence intervals (CIs).
 
 ---
@@ -135,7 +156,32 @@ Use this table to prove that the codebase is highly generalizable and modular.
 ---
 
 ## 5. Concrete Numbers Ready for Presentation
-If your professor asks for proof of rigor or specific figures, refer to this table:
+
+> **⚠️ Do not present the numbers in this section as-is.** They were written
+> before the personalized-model participant-embedding fix and before the
+> margin-interpolation fix described in the status banner at the top of this
+> document, and the CES figures below were never generated from an actual
+> CES Sensitivity Engine run — CES has not been executed yet. The `Sleep:
+> +0.1016 [0.0941, 0.1106]` line below is the exact example the project's
+> own methodology review flagged as reporting false precision on a 59-window,
+> 23-participant test set (four decimal places and a tight CI can look more
+> certain than the sample size supports) — leaving it in place here
+> undermines that review's own point. Regenerate this table from the
+> verified pipeline before using it anywhere:
+> ```powershell
+> python -m src.verify_sensitivity_engine studentlife   # confirm still passing
+> python -c "import json; print(json.dumps(json.load(open('data/processed/sensitivity/studentlife_sensitivity_aggregates.json')), indent=2))"
+> ```
+> and, once CES has actually been run and verified:
+> ```powershell
+> python -m src.verify_sensitivity_engine ces
+> python -c "import json; print(json.dumps(json.load(open('data/processed/sensitivity/ces_sensitivity_aggregates.json')), indent=2))"
+> ```
+> When rebuilding this table, report slope to 2-3 decimal places (not 4) for
+> StudentLife given N=23, and state the sample size next to every StudentLife
+> number, not just once at the section header.
+
+If your professor asks for proof of rigor or specific figures, refer to this table (**pending regeneration per the warning above**):
 
 ### Model Performance & Uncertainty
 * **Personalization Lift (RMSE improvement over population model)**:
@@ -151,7 +197,7 @@ If your professor asks for proof of rigor or specific figures, refer to this tab
   * *Mobility*: $+0.1632$ [95% CI: $0.1308, 0.1944$].
   * *Screen Time*: $-0.4781$ [95% CI: $-0.5001, -0.4567$] (Screen time is associated with lower predicted PAM scores).
   * *Sleep*: $-0.0622$ [95% CI: $-0.0677, -0.0561$].
-  * *Social*: N/A (CES has no social features mapped).
+  * *Social*: N/A — CES has zero social-sensing features (no conversation, call, or SMS columns anywhere in `preprocess_ces.py`; confirmed via `src/step0_audit_checks.py`, this is a structural data-availability gap, not a filtering artifact). Cross-dataset comparisons are limited to the four directions both datasets share: sleep, activity, mobility, screen.
 * **StudentLife (Preliminary, 59 test windows, N=23)**:
   * *Screen Time*: $+0.3220$ [95% CI: $0.3060, 0.3374$].
   * *Sleep*: $+0.1016$ [95% CI: $0.0941, 0.1106$].
@@ -203,15 +249,14 @@ graph TD
     C3 --> C4["Derive alpha limits [alpha_min, alpha_max] (empirical bounds)"]
     
     %% Sweeping and Perturbation
-    C4 --> D["2. Generate Alpha Sweep Array (alphas)<br/>(21 regular steps between alpha_min and alpha_max)"]
+    C4 --> D["2. Generate Alpha Sweep Array (alphas)<br/>(101 regular steps between alpha_min and alpha_max)"]
     D --> E["3. Input-Space Perturbation (perturb_window_for_direction)"]
     E --> E1["For each alpha: X_perturbed = X + alpha * feature_sd<br/>(Applied only to the direction's feature columns)"]
     
     %% Model Forward Pass
     E1 --> F["4. Batched Inference Forward Pass (probe_direction)"]
-    F --> F1["Stack perturbed windows to form a Batch (Shape: 21 x T x F)"]
-    F1 --> F2["Pass batch through trained model forward: model(perturbed_batch)"]
-    
+    F --> F1["Stack perturbed windows to form a Batch (Shape: 101 x T x F)"]
+    F1 --> F2["Pass batch through trained model forward: model(perturbed_batch)"]    
     %% Coercion and Inverse Variance Weighted Fit
     F2 --> G["5. Coerce Predictions & target scaling (_coerce_prediction)"]
     G --> G1["Extract PAM Mean values (original scale)"]
@@ -219,7 +264,7 @@ graph TD
     G2 --> H["6. Inverse-Variance Weighted Curve Fitting (fit_weighted_curve)"]
     H --> H1["Fit 2nd degree polynomial: y = a*alpha^2 + b*alpha + c<br/>using weights w = 1 / std^2"]
     H1 --> H2["Compute Slope (b) and Curvature (2a) at current state (alpha = 0)"]
-    H1 --> H3["Identify Margin (minimum alpha to cross model-estimated PAM reference point)"]
+    H1 --> H3["Identify Margin (linear interpolation of the exact crossing alpha between the two bracketing grid points, not the nearest grid alpha)"]
     
     %% Bootstrapping and Output
     H2 & H3 --> I["7. Predictive Bootstrapping (bootstrap_curve_intervals)"]
@@ -253,7 +298,7 @@ You should explain these steps to your teacher to show the engineering rigor and
    * *Why it's important:* If we perturb a feature by a random high amount (e.g. telling the model the participant slept 30 hours in a day), the model will predict on "impossible" out-of-distribution data, leading to garbage predictions. We calculate the actual training min/max composite range for these features, ensuring all simulated shifts are empirically grounded.
 
 2. **Step 2: Generate Alpha Sweep Array (`default_direction_alphas`)**
-   * *What it means:* We create a continuous range of 21 test points (shifts) stretching from the lowest plausible change to the highest plausible change (e.g. from $-2.5$ standard deviations to $+2.5$ standard deviations).
+   * *What it means:* We create a continuous range of 101 test points (shifts) stretching from the lowest plausible change to the highest plausible change (e.g. from $-2.5$ standard deviations to $+2.5$ standard deviations). This was increased from an initial 21-point grid after the coarser grid was found to quantize margin — collapsing it to identical values across many windows for narrow-feature directions like sleep.
    * *Why it's important:* Instead of testing a single discrete "what-if" scenario, we evaluate the behavior change across a smooth, continuous spectrum.
 
 3. **Step 3: Input-Space Perturbation (`perturb_window_for_direction`)**
@@ -261,19 +306,19 @@ You should explain these steps to your teacher to show the engineering rigor and
    * *Why it's important:* Shifting internal layers has no real-world interpretation. By shifting raw inputs and passing them through the entire model, our results are reported in real physical units (like "an extra hour of sleep corresponds to a model-predicted mood change of $X$ points") — making the sensitivity profile practically interpretable and grounded, without implying clinical prescription.
 
 4. **Step 4: Batched Inference Forward Pass (`probe_direction`)**
-   * *What it means:* We clone the user's 7-day behavior window 21 times, apply the 21 different alpha shifts, stack them into a single tensor batch, and run them forward through the personalized GRU model.
-   * *Why it's important:* Running 21 separate model passes would be computationally slow. Batching them takes advantage of modern GPU/CPU acceleration, enabling real-time sensitivity analysis.
+   * *What it means:* We clone the user's 7-day behavior window 101 times, apply the 101 different alpha shifts, stack them into a single tensor batch, and run them forward through the personalized GRU model. For personalized models, the participant's correctly-mapped embedding index is passed alongside the perturbed batch — this needed a fix, since an early version silently omitted the participant tensor for population-vs-personalized calls, and a separate early version passed the raw participant ID instead of its trained embedding-table index.
+   * *Why it's important:* Running 101 separate model passes would be computationally slow. Batching them takes advantage of modern GPU/CPU acceleration, enabling real-time sensitivity analysis.
 
 5. **Step 5: Coerce Predictions & Target Scaling (`_coerce_prediction`)**
    * *What it means:* The model outputs predictions in standardized values (z-scores). We use the training split's mean and standard deviation to convert these predictions back into original units (e.g. original PAM scale).
    * *Why it's important:* It ensures the output metrics are in original scale units (e.g. PAM values) rather than z-scores — making the sensitivity profile readable in the same units used to describe the data, without implying medical authority over those numbers.
 
 6. **Step 6: Inverse-Variance Weighted Curve Fitting (`fit_weighted_curve`)**
-   * *What it means:* We fit a quadratic curve ($y = a\alpha^2 + b\alpha + c$) across the 21 prediction points. Crucially, each point is weighted by the inverse of its predictive variance ($w = 1/\sigma^2$).
+   * *What it means:* We fit a quadratic curve ($y = a\alpha^2 + b\alpha + c$) across the 101 prediction points. Crucially, each point is weighted by the inverse of its predictive variance ($w = 1/\sigma^2$).
    * *Why it's important (The Core Novelty):* If the model is highly uncertain about a simulated behavioral shift, that prediction point receives less weight in the curve fit. From this fitted curve, we calculate:
      * **Slope ($b$):** The participant's immediate mood responsiveness near their current behavioral baseline.
      * **Curvature ($2a$):** The rate of acceleration or diminishing returns (e.g., does extra sleep help less and less as it increases?).
-     * **Margin:** The minimum behavior shift at which the model-estimated sensitivity curve crosses a chosen pattern-reference point (not a clinical prescription — a descriptive diagnostic of model-predicted responsiveness).
+     * **Margin:** The minimum behavior shift at which the model-estimated sensitivity curve crosses a chosen pattern-reference point, found by linearly interpolating between the two grid points that bracket the crossing (not a clinical prescription — a descriptive diagnostic of model-predicted responsiveness). If a direction never crosses the reference point within its plausible bounds for a given window, margin is correctly reported as infinite rather than a spurious finite number — this is itself a finding (e.g. StudentLife's `sleep` direction alone does not push predicted PAM across threshold for any test window), not a computation failure.
 
 7. **Step 7: Predictive Bootstrapping (`bootstrap_curve_intervals`)**
    * *What it means:* We resample the predictions using the model's own predicted standard deviation 200 times and recalculate the curves to establish 95% Confidence Intervals (CIs) for our slope and curvature.
@@ -282,5 +327,3 @@ You should explain these steps to your teacher to show the engineering rigor and
 8. **Pairwise Interaction Flow & Mahalanobis Filter (`probe_interaction`)**
    * *What it means:* We simulate shifting two behaviors simultaneously (e.g. changing both sleep and screen time). To make sure the joint behavior is realistic, we calculate the Mahalanobis distance against the joint training distribution and discard simulated states that fall outside the 97.5% boundary.
    * *Why it's important:* This ensures the model does not hallucinate under impossible joint conditions (e.g., a person sleeping 12 hours *and* spending 16 hours on their screen on the same day). It calculates whether the joint behavioral shift is more (or less) than the simple sum of individual changes (identifying synergetic or buffering behavioral interactions).
-
-
