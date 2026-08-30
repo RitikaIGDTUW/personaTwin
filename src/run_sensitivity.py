@@ -70,6 +70,8 @@ def main() -> None:
     parser.add_argument("--personalized", action="store_true")
     parser.add_argument("--max-windows", type=int, default=None,
                          help="Cap windows for the interaction sweep (pairwise cost grows fast)")
+    parser.add_argument("--batch-size", type=int, default=8,
+                         help="Windows per univariate sensitivity batch")
     parser.add_argument("--threshold", type=float, default=8.0,
                          help="PAM threshold used for margin/crossing calculations")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
@@ -106,6 +108,7 @@ def main() -> None:
         device=device,
         target_mean=target_mean,
         target_std=target_std,
+        batch_size=args.batch_size,
         personalized=args.personalized,
         participant_index=idx,
     )
