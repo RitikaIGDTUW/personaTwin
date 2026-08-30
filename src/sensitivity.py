@@ -902,6 +902,8 @@ def aggregate_interaction_profiles(
             summary["interaction_median"] = float(np.median(interaction_values))
             summary["interaction_std"] = float(interaction_values.std(ddof=0))
             summary["interaction_abs_mean"] = float(np.abs(interaction_values).mean())
+            summary["max_synergy"] = float(interaction_values.max())
+            summary["max_antagonism"] = float(interaction_values.min())
             summary["interaction_large_fraction"] = float(
                 (np.abs(interaction_values) > abs(reporting_threshold)).mean()
             )
@@ -910,6 +912,8 @@ def aggregate_interaction_profiles(
             summary["interaction_median"] = float("nan")
             summary["interaction_std"] = float("nan")
             summary["interaction_abs_mean"] = float("nan")
+            summary["max_synergy"] = float("nan")
+            summary["max_antagonism"] = float("nan")
             summary["interaction_large_fraction"] = float("nan")
         low, high = _interaction_cluster_interval(
             pair_rows,
