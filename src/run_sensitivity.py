@@ -101,10 +101,12 @@ def main() -> None:
         feature_names=feature_names,
         direction_map=direction_map,
         threshold=args.threshold,
+        max_windows=args.max_windows,
+        device=device,
         target_mean=target_mean,
         target_std=target_std,
-        personalized=args.personalized,      # <-- add
-        participant_index=idx,   
+        personalized=args.personalized,
+        participant_index=idx,
     )
     aggregates = aggregate_profiles(rows)
     export_profiles(rows, aggregates, PROCESSED_DIR / "sensitivity", prefix=args.dataset)
@@ -120,6 +122,7 @@ def main() -> None:
         feature_names=feature_names,
         direction_map=direction_map,
         max_windows=args.max_windows,
+        device=device,
         target_mean=target_mean,
         target_std=target_std,
         personalized=args.personalized,
