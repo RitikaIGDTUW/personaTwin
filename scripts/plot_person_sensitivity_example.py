@@ -1,15 +1,25 @@
 from pathlib import Path
 import math
+import json
+import sys
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import torch
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.sensitivity import alpha_for_real_shift, plausible_alpha_bounds
+
 SENS_DIR = ROOT / "data" / "processed" / "sensitivity"
 DIRECTIONS = ["sleep", "activity", "mobility", "screen"]
+SEQUENCE_PATH = ROOT / "data" / "processed" / "ces_sequences.pt"
+CES_DIRECTION_MAP_PATH = ROOT / "data" / "interim" / "ces_behavioral_direction_map.json"
 
 
 def _finite_float(value, default=0.0):
@@ -25,8 +35,8 @@ def _finite_float(value, default=0.0):
 def load_available_csvs():
     files = []
     for name in [
-        "studentlife_continuous_sensitivity_profiles.csv",
-        "ces_continuous_sensitivity_profiles.csv",
+        "studentlife_personalized_continuous_sensitivity_profiles.csv",
+        "ces_personalized_continuous_sensitivity_profiles.csv",
     ]:
         p = SENS_DIR / name
         if p.exists():
@@ -129,9 +139,27 @@ def main():
     if not all_profiles:
         raise ValueError("No valid sensitivity data loaded")
 
-    dataset_name, meta = next(iter(all_profiles.items()))
+    dataset_name = "ces_personalized" if "ces_personalized" in all_profiles else next(iter(all_profiles))
+    meta = all_profiles[dataset_name]
     person = meta["person"]
     profiles = meta["profiles"]
+
+    if dataset_name == "ces_personalized":
+        artifact = torch.load(SEQUENCE_PATH, map_location="cpu", weights_only=False)
+        direction_map = json.loads(CES_DIRECTION_MAP_PATH.read_text())
+        sleep_feature = direction_map["sleep"][0]
+        lower_alpha, upper_alpha = plausible_alpha_bounds(
+            artifact,
+            artifact["metadata"]["feature_names"],
+            direction_map,
+            "sleep",
+        )
+        requested_alpha = alpha_for_real_shift(2.0, sleep_feature, artifact)
+        demo_alpha = float(np.clip(requested_alpha, lower_alpha, upper_alpha))
+        print(f"sleep_feature={sleep_feature}")
+        print("requested_sleep_shift_hours=2.0")
+        print(f"requested_alpha={requested_alpha:.6f}")
+        print(f"bounded_alpha={demo_alpha:.6f}")
 
     radar_scores = {}
     for d in DIRECTIONS:
