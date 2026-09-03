@@ -29,6 +29,7 @@ EXPECTED_DIRECTIONS = {
 EXPECTED_PARTICIPANTS = {
     "studentlife": 23,
 }
+PROFILES_PREFIX = ""
 
 
 def check(label: str, condition: bool, detail: str = "") -> bool:
@@ -39,8 +40,9 @@ def check(label: str, condition: bool, detail: str = "") -> bool:
 
 def verify_univariate(dataset: str) -> bool:
     print(f"\n=== Univariate profiles ({dataset}) ===")
-    profiles_path = PROCESSED_DIR / "sensitivity" / f"{dataset}_sensitivity_profiles.csv"
-    aggregates_path = PROCESSED_DIR / "sensitivity" / f"{dataset}_sensitivity_aggregates.json"
+    prefix = PROFILES_PREFIX or dataset
+    profiles_path = PROCESSED_DIR / "sensitivity" / f"{prefix}_sensitivity_profiles.csv"
+    aggregates_path = PROCESSED_DIR / "sensitivity" / f"{prefix}_sensitivity_aggregates.json"
 
     all_ok = True
     all_ok &= check("profiles.csv exists", profiles_path.exists())
@@ -121,8 +123,9 @@ def verify_univariate(dataset: str) -> bool:
 
 def verify_interaction(dataset: str) -> bool:
     print(f"\n=== Interaction profiles ({dataset}) ===")
-    profiles_path = PROCESSED_DIR / "sensitivity" / f"{dataset}_interaction_profiles.csv"
-    aggregates_path = PROCESSED_DIR / "sensitivity" / f"{dataset}_interaction_aggregates.json"
+    prefix = PROFILES_PREFIX or dataset
+    profiles_path = PROCESSED_DIR / "sensitivity" / f"{prefix}_interaction_profiles.csv"
+    aggregates_path = PROCESSED_DIR / "sensitivity" / f"{prefix}_interaction_aggregates.json"
 
     all_ok = True
     all_ok &= check("interaction_profiles.csv exists", profiles_path.exists())
@@ -174,8 +177,17 @@ def verify_interaction(dataset: str) -> bool:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset", choices=["studentlife", "ces"])
+    parser.add_argument(
+        "--personalized",
+        action="store_true",
+        help="verify personalized sensitivity artifacts",
+    )
     parser.add_argument("--device", type=str, default="cpu")
     args = parser.parse_args()
+
+    if args.personalized:
+        global PROFILES_PREFIX
+        PROFILES_PREFIX = f"{args.dataset}_personalized"
 
     uni_ok = verify_univariate(args.dataset)
     inter_ok = verify_interaction(args.dataset)

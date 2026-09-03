@@ -274,8 +274,14 @@ def plot_participant_radar(profiles: pd.DataFrame, prefix: str, uids: list[str] 
     clean["direction"] = clean["direction"].astype(str)
     clean["slope"] = pd.to_numeric(clean["slope"], errors="coerce")
     clean = clean[np.isfinite(clean["slope"]) | clean["slope"].isna()]
-    directions = BEHAVIORAL_DIRECTIONS
+    directions = [
+        direction
+        for direction in BEHAVIORAL_DIRECTIONS
+        if clean.loc[clean["direction"] == direction, "slope"].notna().any()
+    ]
     if clean.empty:
+        return
+    if not directions:
         return
     if uids is None:
         per_uid = clean.groupby("uid")["slope"].apply(lambda s: s.abs().mean())
@@ -409,7 +415,11 @@ def plot_slope_spread(profiles: pd.DataFrame, prefix: str):
         return
 
     per_participant = clean.groupby(["uid", "direction"], as_index=False)["slope"].mean()
-    directions = [d for d in BEHAVIORAL_DIRECTIONS if d in per_participant["direction"].unique()]
+    directions = [
+        d for d in BEHAVIORAL_DIRECTIONS
+        if d in per_participant["direction"].unique()
+        and per_participant.loc[per_participant["direction"] == d, "slope"].notna().any()
+    ]
     data = [per_participant[per_participant["direction"] == d]["slope"].dropna().to_numpy(dtype=float) for d in directions]
     data = [np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0) for x in data]
 
@@ -429,7 +439,15 @@ def plot_slope_spread(profiles: pd.DataFrame, prefix: str):
 
 
 def plot_interaction_heatmap(interaction_aggregates: dict, prefix: str):
-    directions = BEHAVIORAL_DIRECTIONS
+    pairs = []
+    for pair, summary in interaction_aggregates.items():
+        if summary.get("interaction_mean") is None:
+            continue
+        a, b = pair.split(":") if ":" in pair else pair.split(",")
+        pairs.append((a.strip(), b.strip()))
+    directions = [d for d in BEHAVIORAL_DIRECTIONS if any(d in pair for pair in pairs)]
+    if not directions:
+        return
     matrix = np.full((len(directions), len(directions)), np.nan)
     for pair, summary in interaction_aggregates.items():
         a, b = pair.split(":") if ":" in pair else pair.split(",")
