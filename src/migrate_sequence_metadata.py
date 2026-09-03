@@ -13,7 +13,7 @@ from src.config import CES_SEQUENCES_CACHE, STUDENTLIFE_SEQUENCES_CACHE
 from src.datasets import _coerce_model_dates, _split_participant_rows
 
 
-def train_feature_statistics(model_df: pd.DataFrame, feature_names: list[str], date_column: str) -> tuple[dict[str, float], dict[str, float]]:
+def train_feature_statistics(model_df: pd.DataFrame, feature_names: list[str], date_column: str) -> tuple[dict[str, float], dict[str, float], dict[str, float], dict[str, float]]:
     data = model_df[["uid", date_column, *feature_names]].copy()
     data["_date"] = _coerce_model_dates(data[date_column])
     data = data.dropna(subset=["uid", "_date"]).sort_values(["uid", "_date"])
@@ -33,6 +33,8 @@ def train_feature_statistics(model_df: pd.DataFrame, feature_names: list[str], d
     return (
         {name: float(means[name]) for name in feature_names},
         {name: float(stds[name]) for name in feature_names},
+        {name: float(filled[name].min()) for name in feature_names},
+        {name: float(filled[name].max()) for name in feature_names},
     )
 
 
@@ -47,10 +49,12 @@ def migrate(dataset: str) -> Path:
         date_column = "day"
 
     artifact = torch.load(artifact_path, map_location="cpu", weights_only=False)
-    raw_mean, raw_std = train_feature_statistics(model_df, feature_names, date_column)
+    raw_mean, raw_std, raw_min, raw_max = train_feature_statistics(model_df, feature_names, date_column)
     metadata = artifact.setdefault("metadata", {})
     metadata["feature_raw_mean"] = raw_mean
     metadata["feature_raw_std"] = raw_std
+    metadata["feature_raw_min"] = raw_min
+    metadata["feature_raw_max"] = raw_max
     torch.save(artifact, artifact_path)
     print(f"updated={artifact_path}")
     print(f"features={len(feature_names)}")

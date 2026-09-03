@@ -215,6 +215,12 @@ def _build_uncached(
         "feature_raw_std": {
             name: float(stds[name]) for name in feature_names
         },
+        "feature_raw_min": {
+            name: float(filled[name].min()) for name in feature_names
+        },
+        "feature_raw_max": {
+            name: float(filled[name].max()) for name in feature_names
+        },
     }
     return output
 

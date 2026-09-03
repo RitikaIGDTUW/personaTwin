@@ -119,6 +119,37 @@ def alpha_to_real_units(
     }
 
 
+def alpha_for_real_shift(
+    real_shift: float,
+    feature_name: str,
+    artifact: dict,
+) -> float:
+    """Convert a requested shift in one raw feature to standardized alpha.
+
+    This is the safe counterpart to treating ``alpha=1`` as a user action:
+    alpha=1 means one population standard deviation, which may be many hours
+    for a clock-time feature. The caller should validate the resulting value
+    against ``plausible_alpha_bounds`` before passing it to the engine.
+    """
+    raw_std = artifact.get("metadata", {}).get("feature_raw_std", {}).get(feature_name)
+    if raw_std is None or not np.isfinite(float(raw_std)) or float(raw_std) <= 0:
+        raise KeyError(f"No positive raw standard deviation for feature {feature_name!r}")
+    return float(real_shift) / float(raw_std)
+
+
+def raw_range_for_feature(feature_name: str, artifact: dict) -> tuple[float, float]:
+    """Return the observed train-split raw range for one feature."""
+    metadata = artifact.get("metadata", {})
+    raw_min = metadata.get("feature_raw_min", {}).get(feature_name)
+    raw_max = metadata.get("feature_raw_max", {}).get(feature_name)
+    if raw_min is None or raw_max is None:
+        raise KeyError(
+            "artifact metadata lacks feature_raw_min/feature_raw_max; run "
+            "the metadata migration or rebuild the sequence cache"
+        )
+    return float(raw_min), float(raw_max)
+
+
 def raw_value_for_window(
     window: torch.Tensor,
     artifact: dict,
