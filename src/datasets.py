@@ -209,6 +209,12 @@ def _build_uncached(
         "lookback_days": SEQUENCE_LOOKBACK_DAYS,
         "min_sequence_days": MIN_SEQUENCE_DAYS,
         "normalization": "train-only median, mean, and standard deviation",
+        "feature_raw_mean": {
+            name: float(means[name]) for name in feature_names
+        },
+        "feature_raw_std": {
+            name: float(stds[name]) for name in feature_names
+        },
     }
     return output
 

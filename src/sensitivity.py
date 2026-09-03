@@ -93,6 +93,60 @@ def plausible_alpha_bounds(
     return lower, upper
 
 
+def alpha_to_real_units(
+    alpha: float,
+    artifact: dict,
+    feature_names: Sequence[str],
+    direction_map: dict[str, list[str]],
+    direction: str,
+) -> dict[str, float]:
+    """Convert a standardized direction shift to each feature's raw units."""
+    metadata = artifact.get("metadata", {})
+    raw_stds = metadata.get("feature_raw_std")
+    if raw_stds is None:
+        raise KeyError(
+            "artifact metadata lacks feature_raw_std; rebuild the sequence "
+            "cache with `python -m src.build_sequences <dataset> --force`"
+        )
+
+    indices = direction_feature_indices(feature_names, direction_map, direction)
+    names = list(feature_names)
+    train_x = artifact["train"]["X"].float()
+    z_stds = train_x[:, :, indices].std(dim=(0, 1), unbiased=False).clamp_min(1e-6)
+    return {
+        names[index]: float(alpha) * float(z_stds[offset]) * float(raw_stds.get(names[index], 1.0))
+        for offset, index in enumerate(indices)
+    }
+
+
+def raw_value_for_window(
+    window: torch.Tensor,
+    artifact: dict,
+    feature_names: Sequence[str],
+    direction_map: dict[str, list[str]],
+    direction: str,
+    day_index: int = -1,
+) -> dict[str, float]:
+    """Return raw-unit values for one direction on one window day."""
+    metadata = artifact.get("metadata", {})
+    raw_means = metadata.get("feature_raw_mean")
+    raw_stds = metadata.get("feature_raw_std")
+    if raw_means is None or raw_stds is None:
+        raise KeyError(
+            "artifact metadata lacks raw feature statistics; rebuild the "
+            "sequence cache with `python -m src.build_sequences <dataset> --force`"
+        )
+
+    indices = direction_feature_indices(feature_names, direction_map, direction)
+    names = list(feature_names)
+    day = torch.as_tensor(window, dtype=torch.float32)[day_index]
+    return {
+        names[index]: float(day[index]) * float(raw_stds[names[index]])
+        + float(raw_means[names[index]])
+        for index in indices
+    }
+
+
 def direction_map_feature_counts(
     direction_map: dict[str, list[str]],
     directions: Sequence[str] = ("sleep", "activity", "social", "mobility", "screen"),
