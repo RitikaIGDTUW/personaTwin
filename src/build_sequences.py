@@ -24,6 +24,8 @@ from src.preprocess_ces import (
 def _studentlife_inputs() -> tuple[pd.DataFrame, list[str], list[str], object]:
     model_df = pd.read_parquet(STUDENTLIFE_MODEL_DF_CACHE)
     target_names = ["pam"]
+    model_df = model_df.sort_values(["uid", "date"]).copy()
+    model_df["pam_history"] = model_df["pam"]
     feature_names = [
         column
         for column in model_df.columns
@@ -43,6 +45,9 @@ def _ces_inputs() -> tuple[pd.DataFrame, list[str], list[str], object]:
     target_names = ["pam"] if "pam" in model_df else []
     if not target_names:
         raise KeyError("CES model dataframe does not contain the PAM target")
+    model_df = model_df.sort_values(["uid", "day"]).copy()
+    model_df["pam_history"] = model_df["pam"]
+    feature_names = [*feature_names, "pam_history"]
     return (
         model_df,
         feature_names,

@@ -575,6 +575,12 @@ def profile_direction_pairs(
         )].std(dim=(0, 1), unbiased=False).clamp_min(1e-6)
         for direction in available
     }
+    alpha_grids = {}
+    for direction in available:
+        lower, upper = plausible_alpha_bounds(
+            artifact, feature_names, direction_map, direction
+        )
+        alpha_grids[direction] = default_direction_alphas(lower, upper, steps=7)
     pair_stats = {
         (direction_a, direction_b): _pair_plausibility_stats(
             artifact, feature_names, direction_map, direction_a, direction_b
@@ -599,8 +605,8 @@ def profile_direction_pairs(
                     direction_a=direction_a,
                     direction_b=direction_b,
                     window=windows[index],
-                    alphas_a=alphas_a,
-                    alphas_b=alphas_b,
+                    alphas_a=alphas_a or alpha_grids[direction_a],
+                    alphas_b=alphas_b or alpha_grids[direction_b],
                     device=device,
                     target_mean=target_mean,
                     target_std=target_std,
@@ -616,7 +622,8 @@ def profile_direction_pairs(
                     "direction_b": direction_b,
                     **summarize_interaction_response(response),
                 })
-        if (index + 1) % max(1, limit // 10) == 0 or index == limit - 1:
+        progress_interval = max(1, limit // 20)
+        if (index + 1) % progress_interval == 0 or index == limit - 1:
             print(
                 f"[interaction] processed {index + 1}/{limit} windows "
                 f"({len(rows)} rows so far)",

@@ -1,3 +1,6 @@
+
+
+
 """Train and evaluate the population PAM GRU baseline.
 
 This script is GPU-ready for Colab/Kaggle and remains CPU-safe for small
@@ -277,7 +280,13 @@ def run_uncertainty_epoch(
     personalized: bool,
     optimizer: torch.optim.Optimizer | None = None,
     mean_loss_weight: float = 0.25,
+    mse_only: bool = False,
 ) -> float:
+    """mse_only=True runs a pure-MSE warm-start epoch: the mean head is trained
+    to actually fit the target before the logvar head is allowed to compete with
+    it via the NLL term. This avoids the classic heteroscedastic-loss collapse
+    where the model lowers its loss by inflating predicted variance instead of
+    improving the mean prediction."""
     training = optimizer is not None
     model.train(training)
     total_loss = 0.0
@@ -289,7 +298,10 @@ def run_uncertainty_epoch(
             mean, logvar = model(features, batch[2].to(device))
         else:
             mean, logvar = model(features)
-        loss = uncertainty_loss(mean, logvar, targets, mean_loss_weight)
+        if mse_only:
+            loss = torch.mean((targets - mean).square())
+        else:
+            loss = uncertainty_loss(mean, logvar, targets, mean_loss_weight)
         if training:
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
@@ -686,9 +698,17 @@ def train_uncertainty(
     seed: int = 42,
     max_train_windows: int | None = None,
     result_tag: str | None = None,
-    mean_loss_weight: float = 0.25,
+    mean_loss_weight: float = 1.0,
+    warmup_epochs: int = 5,
 ) -> dict[str, float]:
-    """Train an uncertainty-aware population or personalized GRU."""
+    """Train an uncertainty-aware population or personalized GRU.
+
+    warmup_epochs: number of initial epochs trained with plain MSE only (the
+    logvar head still runs forward but doesn't receive gradient), so the mean
+    head is well-fit before the NLL term is introduced. mean_loss_weight was
+    raised from 0.25 to 1.0 by default so the direct mean-accuracy term isn't
+    dominated by the variance-inflation shortcut in the NLL term after warmup.
+    """
     set_seed(seed)
     device = resolve_device(device)
     artifact = load_sequence_artifact(dataset)
@@ -748,25 +768,45 @@ def train_uncertainty(
     checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_{suffix}{result_suffix}.pt"
 
     with log_path.open("w", newline="") as log_file:
-        writer = csv.DictWriter(log_file, fieldnames=["epoch", "train_nll", "val_nll"])
+        writer = csv.DictWriter(
+            log_file, fieldnames=["epoch", "train_loss", "val_nll", "val_mae", "warmup"]
+        )
         writer.writeheader()
-        print(f"dataset={dataset} model={suffix} device={device} features={feature_count}")
+        print(f"dataset={dataset} model={suffix} device={device} features={feature_count} "
+              f"warmup_epochs={warmup_epochs} mean_loss_weight={mean_loss_weight}")
         for epoch in range(1, epochs + 1):
-            train_nll = run_uncertainty_epoch(
-                model, train_loader, device, personalized, optimizer, mean_loss_weight
+            in_warmup = epoch <= warmup_epochs
+            train_loss = run_uncertainty_epoch(
+                model, train_loader, device, personalized, optimizer,
+                mean_loss_weight, mse_only=in_warmup,
             )
-            val_nll = run_uncertainty_epoch(
-                model, val_loader, device, personalized, None, mean_loss_weight
+            # Always evaluate with the full metric set (mae/rmse/nll), even
+            # during warmup, so checkpoint selection is on real accuracy from
+            # epoch 1 rather than only once warmup ends.
+            val_metrics = evaluate_uncertainty(
+                model, val_loader, device, target_mean, target_std, personalized
             )
-            scheduler.step(val_nll)
-            writer.writerow({"epoch": epoch, "train_nll": train_nll, "val_nll": val_nll})
+            val_nll = val_metrics["nll"]
+            val_mae = val_metrics["mae"]
+            scheduler.step(val_mae)
+            writer.writerow({
+                "epoch": epoch, "train_loss": train_loss,
+                "val_nll": val_nll, "val_mae": val_mae, "warmup": in_warmup,
+            })
             log_file.flush()
-            print(f"epoch={epoch:03d} train_nll={train_nll:.6f} val_nll={val_nll:.6f}")
-            if val_nll < best_val:
-                best_val = val_nll
+            print(f"epoch={epoch:03d} warmup={in_warmup} train_loss={train_loss:.6f} "
+                  f"val_nll={val_nll:.6f} val_mae={val_mae:.6f}")
+            # Select the checkpoint by validation MAE (real prediction accuracy
+            # in original PAM units), not validation NLL. NLL can be lowered by
+            # the model simply inflating predicted variance without getting any
+            # better at the actual mean prediction — that's the collapse this
+            # is fixing. We also skip warmup epochs for selection so a
+            # partially-warmed-up model can't "win" on a fluke.
+            if not in_warmup and val_mae < best_val:
+                best_val = val_mae
                 best_state = {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
                 stale_epochs = 0
-            else:
+            elif not in_warmup:
                 stale_epochs += 1
                 if stale_epochs >= patience:
                     print(f"early stopping at epoch {epoch}")
@@ -791,8 +831,9 @@ def train_uncertainty(
             "target_mean": target_mean,
             "target_std": target_std,
             "participant_index": index,
-            "best_val_nll": best_val,
+            "best_val_mae": best_val,
             "mean_loss_weight": mean_loss_weight,
+            "warmup_epochs": warmup_epochs,
             "test_metrics": test_metrics,
         },
         checkpoint_path,
@@ -821,17 +862,27 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-train-windows", type=int, default=None)
     parser.add_argument("--result-tag", default=None)
-    parser.add_argument("--mean-loss-weight", type=float, default=0.25)
+    parser.add_argument("--mean-loss-weight", type=float, default=1.0)
+    parser.add_argument("--warmup-epochs", type=int, default=5,
+                         help="Epochs trained with plain MSE before the NLL term is introduced "
+                              "(uncertainty/uncertainty_personalized models only)")
     args = parser.parse_args()
     arguments = vars(args)
     model_type = arguments.pop("model")
+    # mean_loss_weight / warmup_epochs only apply to the uncertainty models;
+    # the deterministic population/personalized trainers don't accept them.
+    uncertainty_only_keys = ("mean_loss_weight", "warmup_epochs")
     if model_type == "personalized":
+        for key in uncertainty_only_keys:
+            arguments.pop(key, None)
         train_personalized(**arguments)
     elif model_type == "uncertainty":
         train_uncertainty(**arguments)
     elif model_type == "uncertainty_personalized":
         train_uncertainty(personalized=True, **arguments)
     else:
+        for key in uncertainty_only_keys:
+            arguments.pop(key, None)
         train(**arguments)
 
 

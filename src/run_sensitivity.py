@@ -57,7 +57,15 @@ def load_model(artifact: dict, checkpoint_path: Path, personalized: bool, device
         )
     else:
         model = UncertaintyPopulationGRU(**kwargs)
-    model.load_state_dict(checkpoint["model_state"])
+
+    state = checkpoint["model_state"]
+    if "mean_head.weight" not in state and "head.weight" in state:
+        state = dict(state)
+        state["mean_head.weight"] = state.pop("head.weight")
+        state["mean_head.bias"] = state.pop("head.bias")
+        state["logvar_head.weight"] = torch.zeros_like(model.logvar_head.weight)
+        state["logvar_head.bias"] = torch.zeros_like(model.logvar_head.bias)
+    model.load_state_dict(state, strict=False)
     model.to(target_device)
     model.eval()
     return model

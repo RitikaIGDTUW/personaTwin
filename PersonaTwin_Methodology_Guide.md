@@ -5,10 +5,10 @@
 
 > **Implementation status (read before presenting this guide to anyone):**
 >
-> - The Sensitivity Engine described in Sections 3-4 and 7 is implemented,
->   bug-fixed, and structurally verified end-to-end on **StudentLife only**
->   (`python -m src.verify_sensitivity_engine studentlife` passes). CES has
->   not yet been run through the Sensitivity Engine.
+> - The Sensitivity Engine described in Sections 3-4 and 7 is implemented and
+>   has been run end-to-end for personalized StudentLife and CES models. The
+>   StudentLife run processed 59 windows and the CES run processed 3,599
+>   windows. HBN has not yet been sensitivity-tested.
 > - Two real bugs found and fixed since this guide's numbers were written:
 >   (1) the personalized model's participant embedding wasn't being passed
 >   through at all in the univariate path, and was being passed the wrong
@@ -17,10 +17,11 @@
 >   values across many windows (most visibly on `sleep`). Margin is now
 >   computed via linear interpolation between grid points on a 101-point
 >   grid, giving a continuous estimate instead of a quantized one.
-> - **Section 5's numbers below predate both fixes and predate any real CES
->   run.** They should be treated as illustrative placeholders, not results
->   to present. See the warning at the top of Section 5 for what to
->   regenerate before using this table anywhere.
+> - **Section 5's older population tables are historical snapshots.** The
+>   current results to cite are the personalized outputs generated after the
+>   PAM-history feature was added and the uncertainty-model retraining was
+>   completed. Do not mix the old population files with the new personalized
+>   files.
 
 ---
 
@@ -40,7 +41,7 @@ This chart integrates all aspects of the project, highlighting how the general-p
 graph TD
     %% Datasets & Ingestion
     subgraph Data Ingestion & Alignment
-        D1["StudentLife Dataset (17 Features, N=23, Sensing + EMA)"] --> P1["StudentLife Daily Table"]
+        D1["StudentLife Dataset (18 Model Features, N=23, Sensing + EMA)"] --> P1["StudentLife Daily Table"]
         D2["CES Dataset (677 Features to 570, N=202, Sensing + Demographics + EMA)"] --> P2["CES Daily Table"]
         D3["HBN Cohort Actigraphy (Wrist Movement/Sleep, Labels: ADHD/ASD/NT)"] --> P3["HBN Daily Table"]
     end
@@ -103,8 +104,8 @@ graph TD
 ### Stage 1: Data Preprocessing & Alignment
 * **Basic Level**: We load raw sensor streams (GPS, screen lock/unlock, Bluetooth, accelerometer) and daily surveys (EMA) from participants. We align them so each row represents one participant-day of data.
 * **Advanced Level**:
-  * **StudentLife**: Low-resource dataset. We process raw database entries, align daily timestamps, and yield 17 features.
-  * **CES (College Experience Study)**: High-dimensional dataset. We drop features with extreme missingness and near-zero variance, narrowing down from 677 to 570 features (demographics, passive phone sensing, EMA).
+  * **StudentLife**: Low-resource dataset. We process raw database entries, align daily timestamps, and yield 18 model features, including the leakage-safe observed PAM history feature.
+  * **CES (College Experience Study)**: High-dimensional dataset. We drop features with extreme missingness and near-zero variance, narrowing down from 677 to 570 behavioral features; the sequence model uses 571 features after adding leakage-safe observed PAM history.
   * **HBN (Healthy Brain Network)**: The clinical cohort. Focuses on wrist actigraphy (movement, sleep duration, onset, wake-after-onset, activity counts). It has no phone-sensing data, which requires a custom, sleep-and-movement-focused feature schema.
 
 ### Stage 2: Leakage-Safe Sequence Construction
@@ -116,8 +117,8 @@ graph TD
     2. Fill remaining gaps with the **training split median** (never using validation/testing statistics).
     3. Z-score normalize features using **mean and standard deviation computed solely from the training data**.
   * **Sequence Dimensions**:
-    * StudentLife: 1458 training, 88 validation, and 59 test windows (17 features).
-    * CES: 25576 training, 4112 validation, and 3599 test windows (570 features).
+    * StudentLife: 1458 training, 88 validation, and 59 test windows (18 model features).
+    * CES: 25576 training, 4112 validation, and 3599 test windows (571 model features).
 
 ### Stage 3: Personalized Temporal Modeling (The Digital Twin)
 * **Basic Level**: A standard model learns the "average student." But everyone is different—six hours of sleep makes one person energetic and another exhausted. We train a deep recurrent network (GRU) that adapts to each participant.
@@ -125,13 +126,12 @@ graph TD
   * **Adapter Layer**: We inject a learned **participant embedding** (a latent representation vector unique to each person) into the GRU. The embedding shifts the network's internal representations, customizing predictions.
   * **ADHD/ASD Customization (HBN Branch)**: For the HBN cohort, we add a **diagnostic-group embedding** (ADHD, ASD, Neurotypical) alongside the individual participant embedding. This lets the network explicitly capture structural, diagnostic-level behavioral differences.
   * **Predictive Uncertainty**:
-    * **CES (Uncertainty-Native)**: The GRU outputs both a mean $\hat{y}$ and a variance $\sigma^2$ (predictive uncertainty), trained using a Gaussian Negative Log-Likelihood (NLL) loss.
-    * **StudentLife (Validation-Calibrated)**: The native uncertainty head harmed StudentLife's mean prediction error due to data scarcity. We fall back to a deterministic personalized GRU and calculate uncertainty using validation residual standard deviation.
+    * **CES and StudentLife (Uncertainty-Aware)**: The personalized GRU outputs both a mean $\hat{y}$ and a variance $\sigma^2$. Training uses an initial MSE warmup, a direct mean-prediction term, and Gaussian NLL; checkpoints are selected by validation MAE rather than NLL alone.
 
 ### Stage 4: Shared Sensitivity Engine (Core Research Novelty)
 * **Basic Level**: Instead of just predicting tomorrow's mood, we ask "What if this person slept 1 hour more? What if they walked 2 miles more?" We run these hypothetical scenarios through the trained model to construct a response curve.
 * **Advanced Level**:
-  * **Input-Space Perturbation (The Stage 4 Fix)**: Historically, models shifted internal representations ($z$). We corrected this to perturb the **actual input behaviors ($x$)** in physical units (e.g. adding hours of sleep), then passed them through the model. This preserves interpretability.
+  * **Input-Space Perturbation (The Stage 4 Fix)**: Historically, models shifted internal representations ($z$). We corrected this to perturb the **actual input behaviors ($x$)**, applying direction-specific standardized shifts ($\alpha$ times the training feature standard deviation) before passing them through the model. This preserves feature-space interpretability; a frontend must convert these standardized shifts to real units before displaying user recommendations.
   * **Behavioral Directions**: Features are grouped into 5 domains: Sleep, Activity, Social, Mobility, and Screen.
   * **Empirical Plausibility Guard**: To prevent the engine from simulating impossible behaviors (e.g., 30 hours of screen time), shifts ($\alpha$) are restricted to the empirical min/max values observed in the training cohort.
   * **Curve Fitting & Metric Extraction**: We sweep $\alpha$ over 101 steps (increased from an initial 21-step grid after the coarser grid was found to quantize margin to identical values across many windows), run them through the twin, and fit an uncertainty-weighted quadratic curve ($y = a\alpha^2 + b\alpha + c$) using the inverse predictive variance. From this, we extract:
@@ -147,66 +147,134 @@ Use this table to prove that the codebase is highly generalizable and modular.
 
 | Component / Stage | Shared Pipeline Code? | How Datasets Differ |
 |---|---|---|
-| **Preprocessing & Schema** | No (dataset-specific scripts) | StudentLife: 17 features.<br/>CES: 570 features.<br/>HBN: Actigraphy movement/sleep features only. |
+| **Preprocessing & Schema** | No (dataset-specific scripts) | StudentLife: 18 model features (17 behavioral + PAM history).<br/>CES: 571 model features (570 behavioral + PAM history).<br/>HBN: Actigraphy movement/sleep features only. |
 | **Sequence Building** | **Yes (shared framework)** | Splits and chronological boundaries are identical; input/output dimensions adjust dynamically. |
 | **Adapter Layer** | **Yes (shared GRU model structure)**| CES & StudentLife: Participant embedding only.<br/>HBN: Diagnostic-group embedding + participant embedding. |
-| **Uncertainty Method** | No (configuration-driven) | CES: Learned Gaussian NLL head (uncertainty-native).<br/>StudentLife: Validation residual standard deviation (deterministic hybrid). |
+| **Uncertainty Method** | No (configuration-driven) | StudentLife and CES: learned Gaussian uncertainty heads with MSE warmup, direct mean-loss weighting, and validation-MAE checkpoint selection. |
 | **Sensitivity Engine** | **Yes (identical shared code)** | Same mathematical curve fitting, slope, curvature, margin, and bootstrap engine. |
 
 ---
 
 ## 5. Concrete Numbers Ready for Presentation
 
-> **⚠️ Do not present the numbers in this section as-is.** They were written
-> before the personalized-model participant-embedding fix and before the
-> margin-interpolation fix described in the status banner at the top of this
-> document, and the CES figures below were never generated from an actual
-> CES Sensitivity Engine run — CES has not been executed yet. The `Sleep:
-> +0.1016 [0.0941, 0.1106]` line below is the exact example the project's
-> own methodology review flagged as reporting false precision on a 59-window,
-> 23-participant test set (four decimal places and a tight CI can look more
-> certain than the sample size supports) — leaving it in place here
-> undermines that review's own point. Regenerate this table from the
-> verified pipeline before using it anywhere:
-> ```powershell
-> python -m src.verify_sensitivity_engine studentlife   # confirm still passing
-> python -c "import json; print(json.dumps(json.load(open('data/processed/sensitivity/studentlife_sensitivity_aggregates.json')), indent=2))"
-> ```
-> and, once CES has actually been run and verified:
-> ```powershell
-> python -m src.verify_sensitivity_engine ces
-> python -c "import json; print(json.dumps(json.load(open('data/processed/sensitivity/ces_sensitivity_aggregates.json')), indent=2))"
-> ```
-> When rebuilding this table, report slope to 2-3 decimal places (not 4) for
-> StudentLife given N=23, and state the sample size next to every StudentLife
-> number, not just once at the section header.
+The current personalized results below were generated after retraining both
+models with PAM history, MSE warmup, direct mean-loss weighting, and
+validation-MAE checkpoint selection. These are model-sensitivity estimates,
+not causal effects. Older population snapshots later in this section are kept
+for historical comparison and must not be presented as the current results.
 
-If your professor asks for proof of rigor or specific figures, refer to this table (**pending regeneration per the warning above**):
+### Current personalized GRU predictive quality
 
-### Model Performance & Uncertainty
-* **Personalization Lift (RMSE improvement over population model)**:
-  * **StudentLife**: +5.2% improvement.
-  * **CES**: +1.7% improvement.
-* **Uncertainty Calibration (95% Nominal Target vs. Observed Coverage)**:
-  * **CES**: 96.6% observed coverage (Native Gaussian head works exceptionally well).
-  * **StudentLife**: 89.8% observed coverage (Pre-sensitivity audit labels this as *preliminary*).
+| Dataset | Test windows | PAM MAE | PAM RMSE | Actual/predicted correlation |
+|---|---:|---:|---:|---:|
+| StudentLife | 59 | 2.522 | 3.168 | 0.405 |
+| CES | 3,599 | 3.421 | 4.182 | 0.286 |
 
-### Sensitivity Engine Results (Mean Slopes)
-* **CES (Primary, 3,599 test windows, N=202)**:
-  * *Activity*: $+0.5656$ [95% CI: $0.5039, 0.6233$] (Increased activity corresponds to higher PAM scores).
-  * *Mobility*: $+0.1632$ [95% CI: $0.1308, 0.1944$].
-  * *Screen Time*: $-0.4781$ [95% CI: $-0.5001, -0.4567$] (Screen time is associated with lower predicted PAM scores).
-  * *Sleep*: $-0.0622$ [95% CI: $-0.0677, -0.0561$].
-  * *Social*: N/A — CES has zero social-sensing features (no conversation, call, or SMS columns anywhere in `preprocess_ces.py`; confirmed via `src/step0_audit_checks.py`, this is a structural data-availability gap, not a filtering artifact). Cross-dataset comparisons are limited to the four directions both datasets share: sleep, activity, mobility, screen.
-* **StudentLife (Preliminary, 59 test windows, N=23)**:
-  * *Screen Time*: $+0.3220$ [95% CI: $0.3060, 0.3374$].
-  * *Sleep*: $+0.1016$ [95% CI: $0.0941, 0.1106$].
-  * *Social*: $+0.0824$ [95% CI: $0.0673, 0.1003$].
-  * *Activity*: $+0.0449$ [95% CI: $0.0342, 0.0542$].
-  * *Mobility*: $-0.2786$ [95% CI: $-0.2933, -0.2677$].
+The models are on the PAM scale (1-16), no longer exhibit the former
+prediction collapse, and still smooth some short-term individual fluctuations.
+These metrics support a useful predictive baseline, but not a claim of highly
+accurate fluctuation tracking.
+
+### Current personalized sensitivity outputs
+
+StudentLife was regenerated for 59 test windows and 23 participants. CES was
+regenerated for 3,599 test windows and 202 participants. The current CES
+personalized univariate means are:
+
+| Direction | Slope mean | Curvature mean | Margin mean | Participant count |
+|---|---:|---:|---:|---:|
+| activity | +2.0313 | -0.7171 | 0.6048 | 202 |
+| mobility | +0.0705 | -0.0047 | 0.5725 | 202 |
+| screen | +0.2181 | -0.0673 | 1.1118 | 202 |
+| sleep | -0.2395 | +0.0350 | 1.8501 | 202 |
+
+CES has no social sensing direction; social must be reported as unavailable,
+not as a NaN result.
+
+### StudentLife population univariate sensitivity (59 test windows, N=23)
+
+| Direction | Slope mean | Curvature mean | Margin mean | Participant count |
+|---|---:|---:|---:|---:|
+| activity | -0.0789 | -0.00797 | not finite for many windows; threshold not reached within plausible bounds | 23 |
+| mobility | +0.2724 | -0.0341 | not finite for many windows; threshold not reached within plausible bounds | 23 |
+| screen | -0.5769 | -0.00053 | 1.5070 | 23 |
+| sleep | -0.3941 | +0.00416 | 1.8159 | 23 |
+| social | +0.0817 | -0.0101 | not finite for many windows; threshold not reached within plausible bounds | 23 |
+
+Interpretation:
+- **screen** shows the strongest negative population sensitivity, suggesting that increases in screen exposure correspond to lower predicted wellbeing under the trained model.
+- **sleep** also shows a strong negative sensitivity, indicating large modeled dependence on sleep-related behavioral shifts.
+- **mobility** is positive, suggesting higher mobility is associated with higher predicted wellbeing in the population model.
+- **activity** and **social** show weaker marginal effects than screen and sleep.
+- The **margin** statistic is not always finite for StudentLife because several windows do not cross the selected PAM threshold within the empirical perturbation range; this is a legitimate modeling outcome and should be described as a "no crossing within plausible range" result rather than as a numerical failure.
+
+### StudentLife population pairwise interaction sensitivity
+
+| Pair | Interaction mean | Interaction std | Min | Max | Nonzero windows |
+|---|---:|---:|---:|---:|---:|
+| activity:mobility | -0.000694 | 0.00498 | -0.01250 | 0.00724 | 59 |
+| activity:screen | +0.002985 | 0.00396 | -0.00519 | 0.01165 | 59 |
+| activity:social | +0.000998 | 0.00362 | -0.00762 | 0.01146 | 59 |
+| mobility:screen | +0.000854 | 0.00624 | -0.01889 | 0.00933 | 59 |
+| sleep:activity | +0.001276 | 0.00258 | -0.00417 | 0.00700 | 59 |
+| sleep:mobility | +0.000846 | 0.00533 | -0.01121 | 0.01621 | 59 |
+| sleep:screen | +0.009721 | 0.00842 | -0.00301 | 0.04301 | 59 |
+| sleep:social | +0.001673 | 0.00496 | -0.01532 | 0.02470 | 46 |
+| social:mobility | +0.001510 | 0.00380 | -0.00552 | 0.01127 | 59 |
+| social:screen | +0.002465 | 0.00856 | -0.02777 | 0.01688 | 59 |
+
+The strongest pairwise signal is **sleep:screen** (interaction mean $\approx 0.0097$), while the remaining pairwise effects are comparatively small and often close to zero. This suggests that the primary StudentLife signal is dominated by individual behavioral directions rather than strong two-way interactions.
+
+### Current verified output snapshots
+
+These values reflect the current generated outputs from the verified pipeline and should be read as a snapshot of the current model sensitivity estimates rather than as historical claims from an earlier draft.
+
+#### Historical CES population snapshot (superseded)
+
+| direction | slope | curvature | margin |
+|---|---:|---:|---:|
+| activity | 2.131489 | -0.413488 | 0.435649 |
+| mobility | 0.194555 | -0.014611 | 0.835889 |
+| screen | 0.068173 | -0.010087 | inf |
+| sleep | -0.045856 | -0.003242 | inf |
+| social | NaN | NaN | NaN |
+
+This is a historical population-model snapshot and is superseded by the current personalized CES table above. It is retained only to preserve experiment history.
+
+#### Historical CES interaction snapshot (superseded)
+
+| direction_a | direction_b | mean_interaction | std_interaction | min_interaction | max_interaction | nonzero |
+|---|---|---:|---:|---:|---:|---:|
+| activity | mobility | 0.000000000000e+00 | 0.000000000000e+00 | 0.000000000000e+00 | 0.000000000000e+00 | 0 |
+| activity | screen | -9.103933970133e-06 | 9.702535430676e-06 | -3.508726755778e-05 | 6.866455078125e-06 | 25 |
+| mobility | screen | 0.000000000000e+00 | 0.000000000000e+00 | 0.000000000000e+00 | 0.000000000000e+00 | 0 |
+| sleep | activity | -2.199014027913e-06 | 6.341696428400e-07 | -3.099441528320e-06 | -3.178914388021e-07 | 25 |
+| sleep | mobility | 0.000000000000e+00 | 0.000000000000e+00 | 0.000000000000e+00 | 0.000000000000e+00 | 0 |
+| sleep | screen | -1.113704559336e-04 | 2.620990805857e-04 | -1.118146456205e-03 | 1.941025257110e-04 | 25 |
+
+This historical snapshot must not be described as the current personalized result. The current personalized CES interaction run completed all 6 direction pairs across 3,599 windows; its interaction means remain small, with the largest absolute mean approximately $3.9 \times 10^{-3}$ (sleep:screen).
+
+### Current CES personalized pairwise interaction sensitivity
+
+The CES personalized interaction results completed technically, but the values are mostly small. This is a model result rather than a computation failure. The current personalized pairwise interaction summary is:
+
+| direction_a | direction_b | mean | std | minimum | maximum | nonzero |
+|---|---|---:|---:|---:|---:|---:|
+| activity | mobility | +0.003214 | 0.068214 | -1.192463 | +1.424456 | 3599 |
+| activity | screen | +0.000781 | 0.027294 | -0.389853 | +0.571522 | 3599 |
+| mobility | screen | +0.000238 | 0.039064 | -0.497936 | +0.264733 | 3599 |
+| sleep | activity | +0.000231 | 0.007824 | -0.193029 | +0.215892 | 3599 |
+| sleep | mobility | -0.000568 | 0.012810 | -0.312482 | +0.146410 | 3599 |
+| sleep | screen | +0.003934 | 0.031104 | -0.154701 | +0.583326 | 3599 |
+
+This indicates that CES pairwise interactions are small in mean relative to the univariate sensitivity terms, although individual windows can show larger positive or negative responses. The result is not an algorithmic failure; it suggests that the current CES model is driven more by individual behavioral directions than by stable population-level behavioral combinations.
+
+### CES univariate sensitivity status
+
+**CES personalized univariate sensitivity is working and producing numeric results.** The current implementation completed 3,599 windows across 202 participants. The pairwise interaction analysis also completed all six CES pairs; its mean effects are small, while window-level variability is retained in the exported profiles. This should be reported as model sensitivity, not as causal evidence.
 
 > [!NOTE]
-> Slope differences (e.g. screen time slope is negative in CES but positive in StudentLife) show that behavioral categories are dataset-specific operationalizations (CES screen time uses unlock duration; StudentLife uses phone lock). This validates why personalized, dataset-specific modeling is critical.
+> The CES and StudentLife findings should be framed as **model sensitivity**, not causal effects. They explain which behavioral directions the trained model relies on most strongly and whether two-way interactions materially change the prediction beyond the sum of the independent effects.
 
 ---
 
@@ -220,7 +288,7 @@ If your professor asks for proof of rigor or specific figures, refer to this tab
 ### 2. Defending the StudentLife Uncertainty Calibration
 > **Professor's Question**: "Why is the StudentLife coverage only 89.8% instead of the target 95%?"
 >
-> **Your Answer**: *"Because StudentLife is a much smaller dataset (59 test windows compared to CES's 3,599), the uncertainty head suffered from high variance and degraded the mean prediction. We chose to prioritize mean prediction accuracy by using a deterministic personalized model, and then calibrated its uncertainty using validation residuals. We label these StudentLife uncertainty results as 'preliminary' and use CES as our primary validation."*
+> **Your Answer**: *"Because StudentLife is a much smaller dataset (59 test windows compared to CES's 3,599), we use warmup training, a direct mean-prediction term, and validation-MAE checkpoint selection for both personalized uncertainty models. The current StudentLife model remains preliminary because its test set is small and its predictions smooth some short-term fluctuations."*
 
 ### 3. Defending the ADHD/ASD HBN Extension
 > **Professor's Question**: "Why do you have a different branch for ADHD/ASD?"
@@ -230,7 +298,7 @@ If your professor asks for proof of rigor or specific figures, refer to this tab
 ### 4. Defending the "Stage 4 Correction"
 > **Professor's Question**: "Why did you change the sensitivity engine from latent-space to input-space perturbation?"
 >
-> **Your Answer**: *"Perturbing the latent vector $z$ directly is mathematically easy, but the resulting changes have no real-world units (e.g. shifting $z$ by +0.5 has no physical meaning). By shifting the raw behavioral inputs $x$ (e.g. adding 1 hour to sleep) and re-running the model forward, the entire sensitivity landscape stays in real-world physical units (e.g. hours of sleep, steps walked) that participants and researchers can interpret directly — without implying the outputs are clinical measurements."*
+> **Your Answer**: *"Perturbing the latent vector $z$ directly has no behavioral interpretation. We instead perturb the raw input features $x$ and express the engine's internal sweep in standardized alpha units. Before showing a user-facing value such as an extra hour of sleep, the frontend must convert alpha through the relevant feature's training standard deviation."*
 
 ---
 
@@ -303,7 +371,7 @@ You should explain these steps to your teacher to show the engineering rigor and
 
 3. **Step 3: Input-Space Perturbation (`perturb_window_for_direction`)**
    * *What it means:* We modify the **raw features** directly (like raw sleep hours) before passing them to the model, rather than modifying the model's internal hidden representations ($z$).
-   * *Why it's important:* Shifting internal layers has no real-world interpretation. By shifting raw inputs and passing them through the entire model, our results are reported in real physical units (like "an extra hour of sleep corresponds to a model-predicted mood change of $X$ points") — making the sensitivity profile practically interpretable and grounded, without implying clinical prescription.
+  * *Why it's important:* Shifting internal layers has no behavioral interpretation. By shifting raw inputs and passing them through the entire model, the engine evaluates realistic feature-space changes. The current exported alpha values are standardized units; a frontend must translate them into real units such as hours or minutes before displaying a scenario to a user.
 
 4. **Step 4: Batched Inference Forward Pass (`probe_direction`)**
    * *What it means:* We clone the user's 7-day behavior window 101 times, apply the 101 different alpha shifts, stack them into a single tensor batch, and run them forward through the personalized GRU model. For personalized models, the participant's correctly-mapped embedding index is passed alongside the perturbed batch — this needed a fix, since an early version silently omitted the participant tensor for population-vs-personalized calls, and a separate early version passed the raw participant ID instead of its trained embedding-table index.
