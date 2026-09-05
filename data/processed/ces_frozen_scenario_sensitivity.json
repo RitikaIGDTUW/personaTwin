@@ -2226,5 +2226,72 @@
       "sleep_duration_plus_2h_change": -0.9670288442410317
     }
   ],
+  "directional_plus_one_sd_summary": {
+    "sleep": {
+      "status": "evaluated_plus_one_standardized_sd",
+      "selected_features": [
+        "sleep_duration",
+        "sleep_start",
+        "sleep_end",
+        "sleep_duration",
+        "sleep_start",
+        "sleep_end",
+        "sleep_duration",
+        "sleep_start",
+        "sleep_end",
+        "sleep_duration",
+        "sleep_start",
+        "sleep_end",
+        "sleep_duration",
+        "sleep_start",
+        "sleep_end",
+        "sleep_duration",
+        "sleep_start",
+        "sleep_end",
+        "sleep_duration",
+        "sleep_start",
+        "sleep_end"
+      ],
+      "direction_feature_count": 4,
+      "lasso_mean_change": -0.6564784938159512,
+      "gradient_boosting_mean_change": -0.41493195882076983
+    },
+    "activity": {
+      "status": "evaluated_plus_one_standardized_sd",
+      "selected_features": [
+        "act_running_hr_1_dev_from_own_mean",
+        "act_running_hr_16_trend7",
+        "act_running_hr_2_roll_std7",
+        "act_running_hr_1",
+        "act_still_hr_6_trend7"
+      ],
+      "direction_feature_count": 165,
+      "lasso_mean_change": 0.6848382046540331,
+      "gradient_boosting_mean_change": 0.4493555718181205
+    },
+    "social": {
+      "status": "unsupported_no_direction_features",
+      "selected_features": []
+    },
+    "mobility": {
+      "status": "evaluated_plus_one_standardized_sd",
+      "selected_features": [
+        "loc_home_unlock_num_dev_from_own_mean",
+        "loc_visit_num_hr_17_delta1"
+      ],
+      "direction_feature_count": 118,
+      "lasso_mean_change": -0.18925946773428498,
+      "gradient_boosting_mean_change": -0.35822462902687685
+    },
+    "screen": {
+      "status": "evaluated_plus_one_standardized_sd",
+      "selected_features": [
+        "unlock_num_hr_19_delta1"
+      ],
+      "direction_feature_count": 56,
+      "lasso_mean_change": 0.0,
+      "gradient_boosting_mean_change": 0.0
+    }
+  },
   "interpretation": "Scenario outputs are model responses, not causal effects. Agreement is summarized by the sign of each model's change."
 }

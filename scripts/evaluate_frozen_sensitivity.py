@@ -15,6 +15,7 @@ from sklearn.preprocessing import StandardScaler
 
 from src.config import sequence_cache_path
 from src.counterfactuals import perturb_sleep_schedule
+from src.sensitivity import direction_feature_indices, perturb_window_for_direction
 
 
 def _values(split: dict[str, object], key: str) -> np.ndarray:
@@ -90,6 +91,11 @@ def evaluate(dataset: str, selected_path: Path, max_windows: int) -> dict[str, o
     )
     selected = _load_selected(selected_path)
     selected_names = _selected_feature_names(selected_path)
+    direction_map = json.loads(
+        Path("data/interim")
+        .joinpath(f"{dataset}_behavioral_direction_map.json")
+        .read_text()
+    )
     lasso, gbm, scaler = _fit_models(artifact, selected)
     windows = artifact["test"]["X"][:max_windows].float()
     scenario_names = list(_scenario_windows(windows[0], artifact))
@@ -155,6 +161,61 @@ def evaluate(dataset: str, selected_path: Path, max_windows: int) -> dict[str, o
             },
         }
 
+    directional_summary = {}
+    direction_names = ("sleep", "activity", "social", "mobility", "screen")
+    for direction in direction_names:
+        direction_indices = direction_feature_indices(
+            artifact["metadata"]["feature_names"], direction_map, direction
+        )
+        selected_direction = [
+            name
+            for name in selected_names
+            if name in direction_map.get(direction, [])
+            or any(
+                name == f"{base}{suffix}"
+                for base in direction_map.get(direction, [])
+                for suffix in (
+                    "_delta1",
+                    "_delta3",
+                    "_roll_mean7",
+                    "_roll_std7",
+                    "_trend7",
+                    "_dev_from_own_mean",
+                )
+            )
+        ]
+        if not direction_indices:
+            directional_summary[direction] = {
+                "status": "unsupported_no_direction_features",
+                "selected_features": selected_direction,
+            }
+            continue
+        perturbed = torch.cat(
+            [
+                perturb_window_for_direction(
+                    window,
+                    artifact,
+                    artifact["metadata"]["feature_names"],
+                    direction_map,
+                    direction,
+                    alpha=1.0,
+                ).unsqueeze(0)
+                for window in windows
+            ],
+            dim=0,
+        )
+        directional_summary[direction] = {
+            "status": "evaluated_plus_one_standardized_sd",
+            "selected_features": selected_direction,
+            "direction_feature_count": len(direction_indices),
+            "lasso_mean_change": float(
+                (_predict(lasso, scaler, perturbed, selected) - baseline_lasso).mean()
+            ),
+            "gradient_boosting_mean_change": float(
+                (_predict(gbm, None, perturbed, selected) - baseline_gbm).mean()
+            ),
+        }
+
     lasso_selected_coefficients = scaler.scale_ * 0.0
     # A one-standard-deviation shift in one selected standardized input changes
     # Lasso output by exactly its fitted coefficient.
@@ -190,6 +251,7 @@ def evaluate(dataset: str, selected_path: Path, max_windows: int) -> dict[str, o
         "sleep_scenario_summary": summary,
         "sleep_duration_heterogeneity": heterogeneity,
         "sleep_duration_per_window": per_window_rows,
+        "directional_plus_one_sd_summary": directional_summary,
         "interpretation": (
             "Scenario outputs are model responses, not causal effects. "
             "Agreement is summarized by the sign of each model's change."
