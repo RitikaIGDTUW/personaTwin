@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from time import perf_counter
 
 import numpy as np
 import pandas as pd
@@ -43,8 +44,15 @@ def _add_temporal_features(
     grouped = df.groupby(group_col, observed=True)
     derived_names: list[str] = []
     derived_columns: dict[str, pd.Series] = {}
+    total_features = len(feature_names)
+    progress_step = max(1, total_features // 20)
+    started_at = perf_counter()
+    print(
+        f"[sequences] engineering temporal features: 0/{total_features} (0%)",
+        flush=True,
+    )
 
-    for feat in feature_names:
+    for feature_index, feat in enumerate(feature_names, start=1):
         g = grouped[feat]
 
         delta1_col = f"{feat}_delta1"
@@ -71,6 +79,17 @@ def _add_temporal_features(
         derived_names.extend(
             [delta1_col, delta3_col, roll_mean_col, roll_std_col, trend_col, dev_col]
         )
+        if feature_index % progress_step == 0 or feature_index == total_features:
+            elapsed = perf_counter() - started_at
+            rate = feature_index / max(elapsed, 1e-6)
+            remaining = (total_features - feature_index) / max(rate, 1e-6)
+            print(
+                f"[sequences] engineering temporal features: "
+                f"{feature_index}/{total_features} "
+                f"({feature_index / total_features:.0%}), "
+                f"elapsed={elapsed:.0f}s, eta={remaining:.0f}s",
+                flush=True,
+            )
 
     return pd.concat([df, pd.DataFrame(derived_columns, index=df.index)], axis=1), [
         *feature_names,
@@ -105,7 +124,12 @@ def _prepare_split(
         feature_names
     ].ffill()
     output[feature_names] = output[feature_names].fillna(fill_values)
-    output[feature_names] = (output[feature_names] - means) / stds
+    # Normalize in float32 without pandas' aligned float64 temporary, which
+    # is significant for CES after temporal feature expansion.
+    values = output[feature_names].to_numpy(dtype=np.float32, copy=True)
+    values -= means.to_numpy(dtype=np.float32)
+    values /= stds.to_numpy(dtype=np.float32)
+    output[feature_names] = values
     return output
 
 
@@ -180,6 +204,7 @@ def _build_uncached(
         for split_name, frame in participant_split.items():
             if not frame.empty:
                 splits[split_name].append(frame)
+    del data, participant_groups
 
     train_frame = pd.concat(splits["train"], ignore_index=True)
     numeric_features = train_frame[feature_names].apply(
@@ -190,29 +215,36 @@ def _build_uncached(
     filled = numeric_features.fillna(fill_values)
     means = filled.mean()
     stds = filled.std().replace(0, 1).fillna(1)
+    feature_raw_min = {
+        name: float(filled[name].min()) for name in feature_names
+    }
+    feature_raw_max = {
+        name: float(filled[name].max()) for name in feature_names
+    }
 
-    prepared = {
-        split_name: [
-            _prepare_split(
+    del train_frame, numeric_features, filled
+    print(
+        "[sequences] temporal features complete; assembling contiguous windows",
+        flush=True,
+    )
+
+    output = {}
+    for split_name, frames in splits.items():
+        windows = []
+        targets = []
+        baselines = []
+        window_uids = []
+
+        window_started_at = perf_counter()
+        progress_step = max(1, len(frames) // 10)
+        for frame_index, frame in enumerate(frames, start=1):
+            frame = _prepare_split(
                 frame,
                 feature_names,
                 fill_values,
                 means,
                 stds,
             )
-            for frame in frames
-        ]
-        for split_name, frames in splits.items()
-    }
-
-    output = {}
-    for split_name, frames in prepared.items():
-        windows = []
-        targets = []
-        baselines = []
-        window_uids = []
-
-        for frame in frames:
             frame = frame.sort_values("_date").reset_index(drop=True)
             feature_array = frame[feature_names].to_numpy(dtype=np.float32)
             target_array = frame[target_names].apply(
@@ -243,6 +275,20 @@ def _build_uncached(
                     baselines.append(previous_target)
                 window_uids.append(frame.loc[end_index, "uid"])
 
+            if frame_index % progress_step == 0 or frame_index == len(frames):
+                elapsed = perf_counter() - window_started_at
+                rate = frame_index / max(elapsed, 1e-6)
+                remaining = (len(frames) - frame_index) / max(rate, 1e-6)
+                print(
+                    f"[sequences] assembling {split_name}: "
+                    f"{frame_index}/{len(frames)} "
+                    f"({frame_index / max(len(frames), 1):.0%}), "
+                    f"windows={len(windows)}, elapsed={elapsed:.0f}s, "
+                    f"eta={remaining:.0f}s",
+                    flush=True,
+                )
+            del frame, feature_array, target_array, dates
+
         if windows:
             x_array = np.stack(windows)
             y_array = np.stack(targets)
@@ -269,6 +315,11 @@ def _build_uncached(
                 (0, len(direction_map), len(feature_names)),
                 dtype=np.float32,
             )
+
+        print(
+            f"[sequences] {split_name} windows complete: {len(windows)}",
+            flush=True,
+        )
 
         uid_array = (
             torch.tensor(window_uids)
@@ -301,12 +352,8 @@ def _build_uncached(
         "feature_raw_std": {
             name: float(stds[name]) for name in feature_names
         },
-        "feature_raw_min": {
-            name: float(filled[name].min()) for name in feature_names
-        },
-        "feature_raw_max": {
-            name: float(filled[name].max()) for name in feature_names
-        },
+        "feature_raw_min": feature_raw_min,
+        "feature_raw_max": feature_raw_max,
     }
     return output
 

@@ -492,7 +492,8 @@ def train(
     best_val = float("inf")
     best_state = None
     stale_epochs = 0
-    suffix = f"_{result_tag}" if result_tag else ""
+    target_suffix = "_delta" if predict_delta else ""
+    suffix = f"{target_suffix}_{result_tag}" if result_tag else target_suffix
     log_path = MODEL_LOG_DIR / f"{dataset}_population_gru{suffix}.csv"
     checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_population_gru{suffix}.pt"
 
@@ -556,6 +557,7 @@ def train(
         {
             "model_state": model.state_dict(),
             "dataset": dataset,
+            "predict_delta": predict_delta,
             "feature_count": feature_count,
             "target_names": metadata.get("target_names", []),
             "hidden_size": hidden_size,
@@ -657,7 +659,8 @@ def train_personalized(
     best_val = float("inf")
     best_state = None
     stale_epochs = 0
-    suffix = f"_{result_tag}" if result_tag else ""
+    target_suffix = "_delta" if predict_delta else ""
+    suffix = f"{target_suffix}_{result_tag}" if result_tag else target_suffix
     log_path = MODEL_LOG_DIR / f"{dataset}_personalized_gru{suffix}.csv"
     checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_personalized_gru{suffix}.pt"
 
@@ -728,6 +731,7 @@ def train_personalized(
         {
             "model_state": model.state_dict(),
             "dataset": dataset,
+            "predict_delta": predict_delta,
             "feature_count": feature_count,
             "target_names": metadata.get("target_names", []),
             "hidden_size": hidden_size,
@@ -828,7 +832,10 @@ def train_uncertainty(
     best_val = float("inf")
     best_state = None
     stale_epochs = 0
-    result_suffix = f"_{result_tag}" if result_tag else ""
+    target_suffix = "_delta" if predict_delta else ""
+    result_suffix = (
+        f"{target_suffix}_{result_tag}" if result_tag else target_suffix
+    )
     log_path = MODEL_LOG_DIR / f"{dataset}_{suffix}{result_suffix}.csv"
     checkpoint_path = MODEL_CHECKPOINT_DIR / f"{dataset}_{suffix}{result_suffix}.pt"
 
@@ -887,6 +894,7 @@ def train_uncertainty(
         {
             "model_state": model.state_dict(),
             "dataset": dataset,
+            "predict_delta": predict_delta,
             "target_names": metadata.get("target_names", []),
             "feature_count": feature_count,
             "hidden_size": hidden_size,
