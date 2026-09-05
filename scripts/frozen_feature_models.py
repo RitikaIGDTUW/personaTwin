@@ -19,6 +19,7 @@ from src.config import sequence_cache_path
 
 DEFAULT_FEATURE_FILE = Path("selected_features.json")
 SCENARIO_LEVERS = ["sleep_duration", "sleep_start", "sleep_end"]
+SCENARIO_LEVERS += ["unlock_num_hr_19"]
 
 
 def _values(split: dict[str, object], key: str) -> np.ndarray:

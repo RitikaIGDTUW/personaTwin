@@ -206,18 +206,19 @@ finding, not a value to smooth away.
 ### Scenario-compatible model and sensitivity results
 
 For counterfactual analysis, a second frozen 50-feature manifest pins the raw
-sleep levers `sleep_duration`, `sleep_start`, and `sleep_end` across all seven
-lookback days, then fills the remaining slots using the same train-only
-ranking. This preserves predictive performance while ensuring that a physical
-sleep intervention can reach the model.
+sleep levers `sleep_duration`, `sleep_start`, and `sleep_end`, plus the raw
+screen/unlock lever `unlock_num_hr_19`, across all seven lookback days, then
+fills the remaining slots using the same train-only ranking. This preserves
+predictive performance while ensuring that physical sleep and screen
+interventions can reach the model.
 
 | Model | Test MAE | Test RMSE | Correlation |
 |---|---:|---:|---:|
-| Scenario-aware Lasso | **3.482** | **4.170** | **0.649** |
-| Scenario-aware Gradient Boosting | 3.561 | 4.362 | 0.603 |
+| Scenario-aware Lasso | **3.473** | **4.160** | **0.651** |
+| Scenario-aware Gradient Boosting | 3.551 | 4.366 | 0.602 |
 
-Scenario-aware LOPO performance remained strong: MAE $3.491 \pm 1.277$,
-RMSE $4.080 \pm 1.389$, and correlation $0.610 \pm 0.347$ across 206
+Scenario-aware LOPO performance remained strong: MAE $3.468 \pm 1.273$,
+RMSE $4.045 \pm 1.384$, and correlation $0.619 \pm 0.339$ across 206
 participants, with 194 finite participant correlations.
 
 The physically consistent sleep scenarios produced these mean predicted
@@ -236,8 +237,11 @@ conditional model responses, not marginal or causal effects.
 
 Across the five behavioral directions, a +1 standardized-SD audit gave mean
 changes of sleep -0.656 (Lasso), activity +0.685, mobility -0.189, and screen
-0.000; the corresponding Gradient Boosting changes were -0.415, +0.449,
--0.358, and 0.000. CES has no mapped social features. These directional
++0.019; the corresponding Gradient Boosting changes were -0.415, +0.449,
+-0.358, and -0.041. CES has no mapped social features. The screen direction
+is now nonzero because the scenario-compatible feature set pins the raw
+`unlock_num_hr_19` screen/unlock feature across all seven days; the two model
+families disagree on its sign. These directional
 results are model sensitivity outputs and should not be interpreted as
 behavioral prescriptions.
 

@@ -7,7 +7,8 @@
   "scenario_levers": [
     "sleep_duration",
     "sleep_start",
-    "sleep_end"
+    "sleep_end",
+    "unlock_num_hr_19"
   ],
   "top_k": 50,
   "selected_features": [
@@ -30,6 +31,12 @@
       "feature_name": "sleep_end"
     },
     {
+      "flattened_index": 528,
+      "day_offset": 0,
+      "feature_index": 528,
+      "feature_name": "unlock_num_hr_19"
+    },
+    {
       "flattened_index": 4479,
       "day_offset": 1,
       "feature_index": 482,
@@ -46,6 +53,12 @@
       "day_offset": 1,
       "feature_index": 483,
       "feature_name": "sleep_end"
+    },
+    {
+      "flattened_index": 4525,
+      "day_offset": 1,
+      "feature_index": 528,
+      "feature_name": "unlock_num_hr_19"
     },
     {
       "flattened_index": 8476,
@@ -66,6 +79,12 @@
       "feature_name": "sleep_end"
     },
     {
+      "flattened_index": 8522,
+      "day_offset": 2,
+      "feature_index": 528,
+      "feature_name": "unlock_num_hr_19"
+    },
+    {
       "flattened_index": 12473,
       "day_offset": 3,
       "feature_index": 482,
@@ -82,6 +101,12 @@
       "day_offset": 3,
       "feature_index": 483,
       "feature_name": "sleep_end"
+    },
+    {
+      "flattened_index": 12519,
+      "day_offset": 3,
+      "feature_index": 528,
+      "feature_name": "unlock_num_hr_19"
     },
     {
       "flattened_index": 16470,
@@ -102,6 +127,12 @@
       "feature_name": "sleep_end"
     },
     {
+      "flattened_index": 16516,
+      "day_offset": 4,
+      "feature_index": 528,
+      "feature_name": "unlock_num_hr_19"
+    },
+    {
       "flattened_index": 20467,
       "day_offset": 5,
       "feature_index": 482,
@@ -120,6 +151,12 @@
       "feature_name": "sleep_end"
     },
     {
+      "flattened_index": 20513,
+      "day_offset": 5,
+      "feature_index": 528,
+      "feature_name": "unlock_num_hr_19"
+    },
+    {
       "flattened_index": 24464,
       "day_offset": 6,
       "feature_index": 482,
@@ -136,6 +173,12 @@
       "day_offset": 6,
       "feature_index": 483,
       "feature_name": "sleep_end"
+    },
+    {
+      "flattened_index": 24510,
+      "day_offset": 6,
+      "feature_index": 528,
+      "feature_name": "unlock_num_hr_19"
     },
     {
       "flattened_index": 27978,
@@ -268,48 +311,6 @@
       "day_offset": 0,
       "feature_index": 3007,
       "feature_name": "loc_visit_num_hr_17_delta1"
-    },
-    {
-      "flattened_index": 4195,
-      "day_offset": 1,
-      "feature_index": 198,
-      "feature_name": "audio_amp_std_hr_1"
-    },
-    {
-      "flattened_index": 26063,
-      "day_offset": 6,
-      "feature_index": 2081,
-      "feature_name": "audio_convo_num_ep_2_trend7"
-    },
-    {
-      "flattened_index": 5565,
-      "day_offset": 1,
-      "feature_index": 1568,
-      "feature_name": "audio_amp_mean_ep_1_delta3"
-    },
-    {
-      "flattened_index": 15730,
-      "day_offset": 3,
-      "feature_index": 3739,
-      "feature_name": "unlock_num_hr_19_delta1"
-    },
-    {
-      "flattened_index": 1012,
-      "day_offset": 0,
-      "feature_index": 1012,
-      "feature_name": "act_running_hr_2_roll_std7"
-    },
-    {
-      "flattened_index": 12053,
-      "day_offset": 3,
-      "feature_index": 62,
-      "feature_name": "act_running_hr_1"
-    },
-    {
-      "flattened_index": 17217,
-      "day_offset": 4,
-      "feature_index": 1229,
-      "feature_name": "act_still_hr_6_trend7"
     }
   ]
 }

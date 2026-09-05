@@ -11,7 +11,8 @@
     "scenario_levers": [
       "sleep_duration",
       "sleep_start",
-      "sleep_end"
+      "sleep_end",
+      "unlock_num_hr_19"
     ],
     "standardization": "fit on each fold training participants",
     "model": "StandardScaler + Lasso(alpha=0.01)",
@@ -19,18 +20,18 @@
   },
   "aggregate": {
     "mae": {
-      "mean": 3.4912341670407043,
-      "std": 1.2767620755610598,
+      "mean": 3.4675296931875703,
+      "std": 1.2728049285310377,
       "count": 206
     },
     "rmse": {
-      "mean": 4.080332973221319,
-      "std": 1.389043427908828,
+      "mean": 4.044500881160879,
+      "std": 1.3838525196598064,
       "count": 206
     },
     "corr": {
-      "mean": 0.6097165955306193,
-      "std": 0.34662201914990143,
+      "mean": 0.6192945325719633,
+      "std": 0.3389616763269416,
       "count": 194
     }
   },
