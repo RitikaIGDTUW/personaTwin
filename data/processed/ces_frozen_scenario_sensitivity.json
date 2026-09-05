@@ -76,5 +76,2155 @@
       }
     }
   },
+  "sleep_duration_heterogeneity": {
+    "lasso": {
+      "participants": 98,
+      "negative_fraction": 1.0,
+      "near_zero_fraction": 0.0,
+      "positive_fraction": 0.0,
+      "mean": -0.424121868504844,
+      "std": 0.04336496558024479,
+      "quartiles": {
+        "q25": -0.43348901056284195,
+        "median": -0.43348900342742314,
+        "q75": -0.43348899622929166
+      }
+    },
+    "gradient_boosting": {
+      "participants": 98,
+      "negative_fraction": 0.9387755102040817,
+      "near_zero_fraction": 0.04081632653061224,
+      "positive_fraction": 0.030612244897959183,
+      "mean": -0.31121764740545105,
+      "std": 0.2355126698315948,
+      "quartiles": {
+        "q25": -0.45449998738917163,
+        "median": -0.29085053118897053,
+        "q75": -0.16194174565926084
+      }
+    }
+  },
+  "sleep_duration_per_window": [
+    {
+      "uid": "0107c61e54459068bb83f6be2058d65d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889840095295
+    },
+    {
+      "uid": "0107c61e54459068bb83f6be2058d65d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899405083596
+    },
+    {
+      "uid": "0ba15aa0582c5e825710d42fe3eb231d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901468788004
+    },
+    {
+      "uid": "0ba15aa0582c5e825710d42fe3eb231d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899824380993
+    },
+    {
+      "uid": "0f727c1018c74fbb7142e8c7a77840d6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348902553795376
+    },
+    {
+      "uid": "0f727c1018c74fbb7142e8c7a77840d6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": 0.30976715034689617
+    },
+    {
+      "uid": "0f727c1018c74fbb7142e8c7a77840d6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.10478186343988227
+    },
+    {
+      "uid": "107c06248d28377b345ae06e5bda10c1",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348898699698474
+    },
+    {
+      "uid": "107c06248d28377b345ae06e5bda10c1",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348897954721355
+    },
+    {
+      "uid": "12f90c19f2c2b74ec542b62e74e7cad1",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433489010410661
+    },
+    {
+      "uid": "12f90c19f2c2b74ec542b62e74e7cad1",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900944050683
+    },
+    {
+      "uid": "1618e7f7049efc1a0fbe48af6fda8e57",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890099315549
+    },
+    {
+      "uid": "1618e7f7049efc1a0fbe48af6fda8e57",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890070228514
+    },
+    {
+      "uid": "165970c3847523de7691ef9766b0f3f4",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348898818001114
+    },
+    {
+      "uid": "169d3212668c4eed434dafd32e33c946",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433489001771607
+    },
+    {
+      "uid": "169d3212668c4eed434dafd32e33c946",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348902180771054
+    },
+    {
+      "uid": "17fb1517cc9d7e416782bffb8edd9070",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899047337097
+    },
+    {
+      "uid": "17fb1517cc9d7e416782bffb8edd9070",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899607117364
+    },
+    {
+      "uid": "17fb1517cc9d7e416782bffb8edd9070",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348898697253
+    },
+    {
+      "uid": "17fb1517cc9d7e416782bffb8edd9070",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900876436236
+    },
+    {
+      "uid": "17fb1517cc9d7e416782bffb8edd9070",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890127617298
+    },
+    {
+      "uid": "1c12f39481a6c09da17bd4e6bebed9a2",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899787230355
+    },
+    {
+      "uid": "1d2263527eed2a54e88d340fb8e55308",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890189751408
+    },
+    {
+      "uid": "1d2263527eed2a54e88d340fb8e55308",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900651219413
+    },
+    {
+      "uid": "1d2263527eed2a54e88d340fb8e55308",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890045620545
+    },
+    {
+      "uid": "1ff6d7f34acb354430e7323a35ff7703",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348902452983396
+    },
+    {
+      "uid": "1ff6d7f34acb354430e7323a35ff7703",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890022985558
+    },
+    {
+      "uid": "1ff6d7f34acb354430e7323a35ff7703",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890117721093
+    },
+    {
+      "uid": "1ff6d7f34acb354430e7323a35ff7703",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890147380115
+    },
+    {
+      "uid": "20b8c420e5a7abcb07f11aab23e42923",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890131106066
+    },
+    {
+      "uid": "23d00aa2ae3eb2c224734960f2391885",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901135143914
+    },
+    {
+      "uid": "284784fd7319c4e33b0bf1dc90c1a610",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890240812026
+    },
+    {
+      "uid": "2b3d267f18830c3c257b382edabef246",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890010045189
+    },
+    {
+      "uid": "2d06da49889845dc3af964bafb630b0a",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901297525355
+    },
+    {
+      "uid": "2d06da49889845dc3af964bafb630b0a",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901380751936
+    },
+    {
+      "uid": "2f706716305bceab3969e0f457da16b4",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348903495042546
+    },
+    {
+      "uid": "2f706716305bceab3969e0f457da16b4",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890009634571
+    },
+    {
+      "uid": "34ed21e64b190dc037d35ef7f646feb8",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890049565785
+    },
+    {
+      "uid": "3528757eaf1d15ee6c778eb79cd02de7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890298541243
+    },
+    {
+      "uid": "35cf1abf179310dc33907d953f590366",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889972044911
+    },
+    {
+      "uid": "35cf1abf179310dc33907d953f590366",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899132659735
+    },
+    {
+      "uid": "3bb377ba0acb7d8916010184df36aa57",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890005327634
+    },
+    {
+      "uid": "3bb377ba0acb7d8916010184df36aa57",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348898409142267
+    },
+    {
+      "uid": "3bb377ba0acb7d8916010184df36aa57",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348902510781884
+    },
+    {
+      "uid": "3dad5f11680b432159b65838119ab87e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900163475
+    },
+    {
+      "uid": "3dad5f11680b432159b65838119ab87e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901248689975
+    },
+    {
+      "uid": "3dad5f11680b432159b65838119ab87e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890063332545
+    },
+    {
+      "uid": "3dad5f11680b432159b65838119ab87e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901157936715
+    },
+    {
+      "uid": "3dad5f11680b432159b65838119ab87e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900935068435
+    },
+    {
+      "uid": "4005a296ac7cd078b8bd56f0b905b7a6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899776772987
+    },
+    {
+      "uid": "46562035189535f838d640973dbb222e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890077349307
+    },
+    {
+      "uid": "46b53cdf4d639d54e894d92b6dff817f",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890023642064
+    },
+    {
+      "uid": "51ac1dd0849798d75614176ebff633be",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889922543833
+    },
+    {
+      "uid": "546901e10be0157c4fed40c04bfeaaa5",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889991246963
+    },
+    {
+      "uid": "557b44c8daf2ddb5d02313f20f2505b9",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890087332317
+    },
+    {
+      "uid": "58863d024fc04ff1c3082e2c81e14cf2",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901508859194
+    },
+    {
+      "uid": "596df3c263e97eb09d44a8535ec20ffa",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899095772975
+    },
+    {
+      "uid": "5c446b55e04c641913c09fd39d01d32b",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901627211234
+    },
+    {
+      "uid": "5c446b55e04c641913c09fd39d01d32b",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348898424794147
+    },
+    {
+      "uid": "5c446b55e04c641913c09fd39d01d32b",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901980440324
+    },
+    {
+      "uid": "5fa34bfca33d0ced12ea991006fbc934",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889890016429
+    },
+    {
+      "uid": "5fa34bfca33d0ced12ea991006fbc934",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900893233644
+    },
+    {
+      "uid": "600713d94c8ebe9f12f7d12c6479a131",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433489004579827
+    },
+    {
+      "uid": "600713d94c8ebe9f12f7d12c6479a131",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433489021744653
+    },
+    {
+      "uid": "600713d94c8ebe9f12f7d12c6479a131",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890052999083
+    },
+    {
+      "uid": "600713d94c8ebe9f12f7d12c6479a131",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901654449556
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433488992393511
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900883682795
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899169476196
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433488987979854
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901379657867
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433489025285132
+    },
+    {
+      "uid": "64f2d26b3835e5fa744c35f1709e9c39",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.39226703350920866
+    },
+    {
+      "uid": "6b22ac2851e90cebdb6bcc50288e031c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889950770662
+    },
+    {
+      "uid": "6c4cf48742a55153dd574133a73a6932",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899580138234
+    },
+    {
+      "uid": "6ed487d275984c8c141d40ad10664f46",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889829086599
+    },
+    {
+      "uid": "73e13f8273906f7f43a077f95ec48e7d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900472627294
+    },
+    {
+      "uid": "73e13f8273906f7f43a077f95ec48e7d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890034311325
+    },
+    {
+      "uid": "73e13f8273906f7f43a077f95ec48e7d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901110386207
+    },
+    {
+      "uid": "73e13f8273906f7f43a077f95ec48e7d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348898819503434
+    },
+    {
+      "uid": "791c580346256bca5c697d19170a50b5",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889681284051
+    },
+    {
+      "uid": "791c580346256bca5c697d19170a50b5",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": 0.25536529204236524
+    },
+    {
+      "uid": "791c580346256bca5c697d19170a50b5",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900103301524
+    },
+    {
+      "uid": "791c580346256bca5c697d19170a50b5",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889985821948
+    },
+    {
+      "uid": "79d8490ab94fc7cd6530b1f22593d708",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889980409907
+    },
+    {
+      "uid": "7d2c632a05bbb03ca97555d61be83c41",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890054496805
+    },
+    {
+      "uid": "7d2c632a05bbb03ca97555d61be83c41",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890147276611
+    },
+    {
+      "uid": "7d2c632a05bbb03ca97555d61be83c41",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900475224683
+    },
+    {
+      "uid": "7dcfc929e033d32b768ff4b51bd6a748",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348902456749094
+    },
+    {
+      "uid": "7dcfc929e033d32b768ff4b51bd6a748",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348904557185275
+    },
+    {
+      "uid": "800994037be85bdfd6b3e43be70d02b3",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890139642549
+    },
+    {
+      "uid": "83e4705b8ead02d2659f4d4241183e17",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900378483446
+    },
+    {
+      "uid": "83e4705b8ead02d2659f4d4241183e17",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433489026338604
+    },
+    {
+      "uid": "83e4705b8ead02d2659f4d4241183e17",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889955321496
+    },
+    {
+      "uid": "83e4705b8ead02d2659f4d4241183e17",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348903827450247
+    },
+    {
+      "uid": "84120765740b5395aa49a2feb12fbb43",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889991826987
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900806463364
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889848616843
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889897404812
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890133433751
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889998640832
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889929716583
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901121128236
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890296251741
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889898729122
+    },
+    {
+      "uid": "86a13f6d0bb7070ca042d60b2a582c4c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900595103923
+    },
+    {
+      "uid": "86a13f6d0bb7070ca042d60b2a582c4c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890055078455
+    },
+    {
+      "uid": "8730e74690f38a87355bf45b00fc220e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890229946262
+    },
+    {
+      "uid": "87d88cba80cd67d705f61405fbe40da9",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889940608919
+    },
+    {
+      "uid": "87d88cba80cd67d705f61405fbe40da9",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890009651473
+    },
+    {
+      "uid": "8c0c301d93ca93cae5c090caf21816ec",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.7209741345327343
+    },
+    {
+      "uid": "8c0c301d93ca93cae5c090caf21816ec",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": 0.25536536068776705
+    },
+    {
+      "uid": "8c0c301d93ca93cae5c090caf21816ec",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889987086421
+    },
+    {
+      "uid": "8c644d8cbd193c5575bb826a8abaa245",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900689208314
+    },
+    {
+      "uid": "8c8ee0b0491acee56e6346c2af5c6cf4",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890028675189
+    },
+    {
+      "uid": "8ccf6026d9114437e881d73faa34ea51",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890053123468
+    },
+    {
+      "uid": "8ee53a46a77476104276e6a1af54472c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348902938990674
+    },
+    {
+      "uid": "8ee53a46a77476104276e6a1af54472c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348897770515893
+    },
+    {
+      "uid": "920e275acd8721dad396513f4d7c99ea",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889912276618
+    },
+    {
+      "uid": "964412e1937376da4b5a70412a600bc9",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348898454117446
+    },
+    {
+      "uid": "96cf40f9d3b2d69466161000cd69ae5c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889917939635
+    },
+    {
+      "uid": "97487f1632fbab90426f6760a0fe94ea",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889894657128
+    },
+    {
+      "uid": "97487f1632fbab90426f6760a0fe94ea",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890235940075
+    },
+    {
+      "uid": "98e5152e1020930fb007145c1c60648b",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890261498159
+    },
+    {
+      "uid": "993b20b5d910d05b5d79e0de71386a49",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901768358505
+    },
+    {
+      "uid": "993b20b5d910d05b5d79e0de71386a49",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890050274218
+    },
+    {
+      "uid": "993b20b5d910d05b5d79e0de71386a49",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889866494933
+    },
+    {
+      "uid": "a4fcfc9e92d6861285d6c5979d2fd54b",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889935006432
+    },
+    {
+      "uid": "a4fcfc9e92d6861285d6c5979d2fd54b",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433489008554802
+    },
+    {
+      "uid": "a4fcfc9e92d6861285d6c5979d2fd54b",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900127191126
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899797643103
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899001042673
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890091060303
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348898915417855
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900889205133
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.10478187830001828
+    },
+    {
+      "uid": "aa77ecb82c267ad01e9899413f072025",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889811606262
+    },
+    {
+      "uid": "ac02afb2367b89fdcab1b1245e195b27",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889984392447
+    },
+    {
+      "uid": "ac70fe1f8115ac361f2023269c011c3e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899525705775
+    },
+    {
+      "uid": "ac70fe1f8115ac361f2023269c011c3e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348902280758983
+    },
+    {
+      "uid": "aeeb186fafcc356f44cae870555f4a0d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433488990412509
+    },
+    {
+      "uid": "aeeb186fafcc356f44cae870555f4a0d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890157867948
+    },
+    {
+      "uid": "aeeb186fafcc356f44cae870555f4a0d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890033891261
+    },
+    {
+      "uid": "aeeb186fafcc356f44cae870555f4a0d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901413680974
+    },
+    {
+      "uid": "aeeb186fafcc356f44cae870555f4a0d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.10478189284100843
+    },
+    {
+      "uid": "b17eeda399b312140dc40b8445a8e0a5",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901968829034
+    },
+    {
+      "uid": "b17eeda399b312140dc40b8445a8e0a5",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890070734101
+    },
+    {
+      "uid": "b1fed5ab5fbd8a1b2fd93b925849a11c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890056611611
+    },
+    {
+      "uid": "b1fed5ab5fbd8a1b2fd93b925849a11c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900649296684
+    },
+    {
+      "uid": "b1fed5ab5fbd8a1b2fd93b925849a11c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890092757995
+    },
+    {
+      "uid": "b3db52ffec3adfc49eb061af2f2f2846",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899831459553
+    },
+    {
+      "uid": "b855dfddb71e240c1990b539533cd1f6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433489004278405
+    },
+    {
+      "uid": "bc3ae668f5930dcab54b63a9cfd0896d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889886332851
+    },
+    {
+      "uid": "bc3ae668f5930dcab54b63a9cfd0896d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348897976505185
+    },
+    {
+      "uid": "bc3ae668f5930dcab54b63a9cfd0896d",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889994780484
+    },
+    {
+      "uid": "bd441b322153093e69f107a36a9b15d6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890260947075
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890178307831
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900720301
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900141099067
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900561767256
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901114058647
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889909320072
+    },
+    {
+      "uid": "bea4c7250c8631ddfacf57dfa386caba",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433489025307777
+    },
+    {
+      "uid": "c0fec81b63a711ebc1c29a5df6e21b07",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890125500722
+    },
+    {
+      "uid": "c21283c11daebb61004b688f04c27715",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889987745969
+    },
+    {
+      "uid": "c21d2515be8477a92181b9c0035a9884",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901598227707
+    },
+    {
+      "uid": "c37f9221f44e9ca35a49180dc05a7587",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899900294313
+    },
+    {
+      "uid": "c37f9221f44e9ca35a49180dc05a7587",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901713570775
+    },
+    {
+      "uid": "c37f9221f44e9ca35a49180dc05a7587",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890114073522
+    },
+    {
+      "uid": "c37f9221f44e9ca35a49180dc05a7587",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890155606077
+    },
+    {
+      "uid": "d060bfe5da35b9cbd05e3dc33e167092",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890098088233
+    },
+    {
+      "uid": "d060bfe5da35b9cbd05e3dc33e167092",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433489011369522
+    },
+    {
+      "uid": "d1075cae00d6198eb840ad42a2df742c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889831715145
+    },
+    {
+      "uid": "d1cd5ab675681cd980ee4dd212d8c53c",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890151987021
+    },
+    {
+      "uid": "d2c8a48736cfe925440115558db860ee",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901801696904
+    },
+    {
+      "uid": "db8df8be53722b041b1e649ae0c0b5d4",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899619387904
+    },
+    {
+      "uid": "db8df8be53722b041b1e649ae0c0b5d4",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899301181704
+    },
+    {
+      "uid": "dfba04a156c13a94753a56bbbdd58969",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889908609014
+    },
+    {
+      "uid": "dfba04a156c13a94753a56bbbdd58969",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899980972755
+    },
+    {
+      "uid": "e06024d216d36ef2d7cddc8a67cf77a7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899472239966
+    },
+    {
+      "uid": "e06024d216d36ef2d7cddc8a67cf77a7",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889929230017
+    },
+    {
+      "uid": "e1b0f11a76278ee3f33e48e2d81b50d0",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890011108472
+    },
+    {
+      "uid": "e3d27e46b8e06963920efb69f95df6fc",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890035237353
+    },
+    {
+      "uid": "e535002d3f0d00b98ff8a34754d6472b",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890110015994
+    },
+    {
+      "uid": "e535002d3f0d00b98ff8a34754d6472b",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899097483107
+    },
+    {
+      "uid": "e535002d3f0d00b98ff8a34754d6472b",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889960387134
+    },
+    {
+      "uid": "e946e1f85b5de2dba4edcf1aebbfdc0a",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900224441045
+    },
+    {
+      "uid": "eb5b94ef4672c2971d18f0d95d51f892",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890241391367
+    },
+    {
+      "uid": "eb5b94ef4672c2971d18f0d95d51f892",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901122149197
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901053920397
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889744864867
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889973833471
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890131315299
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348902264529166
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890204032442
+    },
+    {
+      "uid": "f1dcebbb6fbe6d586ddb2c43c781e013",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890104838497
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890129242335
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900856388584
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.433488991780862
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": 0.30976710033781363
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900085676867
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890089360788
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899559292997
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348901084635294
+    },
+    {
+      "uid": "f40ed30e72159a5c839a43fe97e0c905",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900573069526
+    },
+    {
+      "uid": "f40ed30e72159a5c839a43fe97e0c905",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890068297166
+    },
+    {
+      "uid": "f40ed30e72159a5c839a43fe97e0c905",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348899253451
+    },
+    {
+      "uid": "f40ed30e72159a5c839a43fe97e0c905",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334890046498674
+    },
+    {
+      "uid": "fc73375dda5e5460f7088c78654a945e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348902252645427
+    },
+    {
+      "uid": "fc73375dda5e5460f7088c78654a945e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.4334889979801179
+    },
+    {
+      "uid": "fc73375dda5e5460f7088c78654a945e",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900953586145
+    },
+    {
+      "uid": "fe8ddda4ae8c71f7054ca024b82f5c98",
+      "model": "lasso",
+      "sleep_duration_plus_2h_change": -0.43348900535388335
+    },
+    {
+      "uid": "0107c61e54459068bb83f6be2058d65d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3643534202384364
+    },
+    {
+      "uid": "0107c61e54459068bb83f6be2058d65d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.10347358221789715
+    },
+    {
+      "uid": "0ba15aa0582c5e825710d42fe3eb231d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.1814764077304516
+    },
+    {
+      "uid": "0ba15aa0582c5e825710d42fe3eb231d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.42073196328615925
+    },
+    {
+      "uid": "0f727c1018c74fbb7142e8c7a77840d6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5072713156244131
+    },
+    {
+      "uid": "0f727c1018c74fbb7142e8c7a77840d6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.3223806779276351
+    },
+    {
+      "uid": "0f727c1018c74fbb7142e8c7a77840d6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3644806304606649
+    },
+    {
+      "uid": "107c06248d28377b345ae06e5bda10c1",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4808360933465181
+    },
+    {
+      "uid": "107c06248d28377b345ae06e5bda10c1",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.67944035521622
+    },
+    {
+      "uid": "12f90c19f2c2b74ec542b62e74e7cad1",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2911453404496527
+    },
+    {
+      "uid": "12f90c19f2c2b74ec542b62e74e7cad1",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.9421891986349626
+    },
+    {
+      "uid": "1618e7f7049efc1a0fbe48af6fda8e57",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.17533624834769357
+    },
+    {
+      "uid": "1618e7f7049efc1a0fbe48af6fda8e57",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.15249335858144342
+    },
+    {
+      "uid": "165970c3847523de7691ef9766b0f3f4",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5590507707662766
+    },
+    {
+      "uid": "169d3212668c4eed434dafd32e33c946",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3778779524455185
+    },
+    {
+      "uid": "169d3212668c4eed434dafd32e33c946",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5327866530752421
+    },
+    {
+      "uid": "17fb1517cc9d7e416782bffb8edd9070",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.34190637415368275
+    },
+    {
+      "uid": "17fb1517cc9d7e416782bffb8edd9070",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.08907898034072925
+    },
+    {
+      "uid": "17fb1517cc9d7e416782bffb8edd9070",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3631066063635533
+    },
+    {
+      "uid": "17fb1517cc9d7e416782bffb8edd9070",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5275338442125683
+    },
+    {
+      "uid": "17fb1517cc9d7e416782bffb8edd9070",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3038790331493395
+    },
+    {
+      "uid": "1c12f39481a6c09da17bd4e6bebed9a2",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.14426770649033216
+    },
+    {
+      "uid": "1d2263527eed2a54e88d340fb8e55308",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.272721650464669
+    },
+    {
+      "uid": "1d2263527eed2a54e88d340fb8e55308",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.12141017986742442
+    },
+    {
+      "uid": "1d2263527eed2a54e88d340fb8e55308",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.04240665131756871
+    },
+    {
+      "uid": "1ff6d7f34acb354430e7323a35ff7703",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2806130505291553
+    },
+    {
+      "uid": "1ff6d7f34acb354430e7323a35ff7703",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3614554988483434
+    },
+    {
+      "uid": "1ff6d7f34acb354430e7323a35ff7703",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.16305271774546926
+    },
+    {
+      "uid": "1ff6d7f34acb354430e7323a35ff7703",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.0
+    },
+    {
+      "uid": "20b8c420e5a7abcb07f11aab23e42923",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.35887887585227585
+    },
+    {
+      "uid": "23d00aa2ae3eb2c224734960f2391885",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.05685948698660326
+    },
+    {
+      "uid": "284784fd7319c4e33b0bf1dc90c1a610",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4439938086987434
+    },
+    {
+      "uid": "2b3d267f18830c3c257b382edabef246",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2907253716820654
+    },
+    {
+      "uid": "2d06da49889845dc3af964bafb630b0a",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.0
+    },
+    {
+      "uid": "2d06da49889845dc3af964bafb630b0a",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.0
+    },
+    {
+      "uid": "2f706716305bceab3969e0f457da16b4",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.7594006047998905
+    },
+    {
+      "uid": "2f706716305bceab3969e0f457da16b4",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.34063014357767063
+    },
+    {
+      "uid": "34ed21e64b190dc037d35ef7f646feb8",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.34149589361552746
+    },
+    {
+      "uid": "3528757eaf1d15ee6c778eb79cd02de7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.1726509705066146
+    },
+    {
+      "uid": "35cf1abf179310dc33907d953f590366",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2685388406273219
+    },
+    {
+      "uid": "35cf1abf179310dc33907d953f590366",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.29797555221434674
+    },
+    {
+      "uid": "3bb377ba0acb7d8916010184df36aa57",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2240565680640514
+    },
+    {
+      "uid": "3bb377ba0acb7d8916010184df36aa57",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3193518520522731
+    },
+    {
+      "uid": "3bb377ba0acb7d8916010184df36aa57",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -1.183534788482678
+    },
+    {
+      "uid": "3dad5f11680b432159b65838119ab87e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3034705771520627
+    },
+    {
+      "uid": "3dad5f11680b432159b65838119ab87e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.15249335858144608
+    },
+    {
+      "uid": "3dad5f11680b432159b65838119ab87e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.1140575615798256
+    },
+    {
+      "uid": "3dad5f11680b432159b65838119ab87e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.0
+    },
+    {
+      "uid": "3dad5f11680b432159b65838119ab87e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3733431857690731
+    },
+    {
+      "uid": "4005a296ac7cd078b8bd56f0b905b7a6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.16121379797613633
+    },
+    {
+      "uid": "46562035189535f838d640973dbb222e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.07900352854985582
+    },
+    {
+      "uid": "46b53cdf4d639d54e894d92b6dff817f",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.29258500210829697
+    },
+    {
+      "uid": "51ac1dd0849798d75614176ebff633be",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.33879627327200745
+    },
+    {
+      "uid": "546901e10be0157c4fed40c04bfeaaa5",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.08261872542355642
+    },
+    {
+      "uid": "557b44c8daf2ddb5d02313f20f2505b9",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.194901274945793
+    },
+    {
+      "uid": "58863d024fc04ff1c3082e2c81e14cf2",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.10599149573719746
+    },
+    {
+      "uid": "596df3c263e97eb09d44a8535ec20ffa",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.1712892497670082
+    },
+    {
+      "uid": "5c446b55e04c641913c09fd39d01d32b",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.13437310120945933
+    },
+    {
+      "uid": "5c446b55e04c641913c09fd39d01d32b",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2084529427416255
+    },
+    {
+      "uid": "5c446b55e04c641913c09fd39d01d32b",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.6003262483050723
+    },
+    {
+      "uid": "5fa34bfca33d0ced12ea991006fbc934",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.19351449286607902
+    },
+    {
+      "uid": "5fa34bfca33d0ced12ea991006fbc934",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2031365419205562
+    },
+    {
+      "uid": "600713d94c8ebe9f12f7d12c6479a131",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5302193727198614
+    },
+    {
+      "uid": "600713d94c8ebe9f12f7d12c6479a131",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.0593966462473321
+    },
+    {
+      "uid": "600713d94c8ebe9f12f7d12c6479a131",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.23428585346304898
+    },
+    {
+      "uid": "600713d94c8ebe9f12f7d12c6479a131",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3353178693056083
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5726122098673794
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5213852448094212
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5990477296987611
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -1.104650793207482
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.6571975620712112
+    },
+    {
+      "uid": "62e43e3420646eaa7ecb44636abda31a",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.72931311380934
+    },
+    {
+      "uid": "64f2d26b3835e5fa744c35f1709e9c39",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -1.1859540643500182
+    },
+    {
+      "uid": "6b22ac2851e90cebdb6bcc50288e031c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2689472966245967
+    },
+    {
+      "uid": "6c4cf48742a55153dd574133a73a6932",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.0790035285498556
+    },
+    {
+      "uid": "6ed487d275984c8c141d40ad10664f46",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.18407132459904485
+    },
+    {
+      "uid": "73e13f8273906f7f43a077f95ec48e7d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.481810505754112
+    },
+    {
+      "uid": "73e13f8273906f7f43a077f95ec48e7d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3719239873197582
+    },
+    {
+      "uid": "73e13f8273906f7f43a077f95ec48e7d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.1922869759107373
+    },
+    {
+      "uid": "73e13f8273906f7f43a077f95ec48e7d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3034705771520638
+    },
+    {
+      "uid": "791c580346256bca5c697d19170a50b5",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.40766251410493304
+    },
+    {
+      "uid": "791c580346256bca5c697d19170a50b5",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.47608285647153625
+    },
+    {
+      "uid": "791c580346256bca5c697d19170a50b5",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.12064606642790077
+    },
+    {
+      "uid": "791c580346256bca5c697d19170a50b5",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.14879306886774568
+    },
+    {
+      "uid": "79d8490ab94fc7cd6530b1f22593d708",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.6082063800879552
+    },
+    {
+      "uid": "7d2c632a05bbb03ca97555d61be83c41",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.9617272326248827
+    },
+    {
+      "uid": "7d2c632a05bbb03ca97555d61be83c41",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.41350418646722126
+    },
+    {
+      "uid": "7d2c632a05bbb03ca97555d61be83c41",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.29063936750551544
+    },
+    {
+      "uid": "7dcfc929e033d32b768ff4b51bd6a748",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3193518520522751
+    },
+    {
+      "uid": "7dcfc929e033d32b768ff4b51bd6a748",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.01681551102621004
+    },
+    {
+      "uid": "800994037be85bdfd6b3e43be70d02b3",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.0
+    },
+    {
+      "uid": "83e4705b8ead02d2659f4d4241183e17",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2626573443152358
+    },
+    {
+      "uid": "83e4705b8ead02d2659f4d4241183e17",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.17750555341450336
+    },
+    {
+      "uid": "83e4705b8ead02d2659f4d4241183e17",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.22405656806405144
+    },
+    {
+      "uid": "83e4705b8ead02d2659f4d4241183e17",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.9837746151436257
+    },
+    {
+      "uid": "84120765740b5395aa49a2feb12fbb43",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4803240890536904
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5746854218936648
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.575539632525814
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.7342601746851813
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.7088578061599327
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3831526004514545
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.513577217331826
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.37787795244551825
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.8031748999573716
+    },
+    {
+      "uid": "862f10a8c357e957a59d122077b3a5ad",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.37832810989637067
+    },
+    {
+      "uid": "86a13f6d0bb7070ca042d60b2a582c4c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.37964700547993213
+    },
+    {
+      "uid": "86a13f6d0bb7070ca042d60b2a582c4c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4556368773529389
+    },
+    {
+      "uid": "8730e74690f38a87355bf45b00fc220e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.4681889735790152
+    },
+    {
+      "uid": "87d88cba80cd67d705f61405fbe40da9",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.17400149293762635
+    },
+    {
+      "uid": "87d88cba80cd67d705f61405fbe40da9",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.40794988845412483
+    },
+    {
+      "uid": "8c0c301d93ca93cae5c090caf21816ec",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -1.192341468011631
+    },
+    {
+      "uid": "8c0c301d93ca93cae5c090caf21816ec",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.08091432073688587
+    },
+    {
+      "uid": "8c0c301d93ca93cae5c090caf21816ec",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.08907898034072925
+    },
+    {
+      "uid": "8c644d8cbd193c5575bb826a8abaa245",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.6959390888762611
+    },
+    {
+      "uid": "8c8ee0b0491acee56e6346c2af5c6cf4",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.056859486986603036
+    },
+    {
+      "uid": "8ccf6026d9114437e881d73faa34ea51",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.09479735902617126
+    },
+    {
+      "uid": "8ee53a46a77476104276e6a1af54472c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.21190841713392983
+    },
+    {
+      "uid": "8ee53a46a77476104276e6a1af54472c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.664905563788676
+    },
+    {
+      "uid": "920e275acd8721dad396513f4d7c99ea",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.14233281395057107
+    },
+    {
+      "uid": "964412e1937376da4b5a70412a600bc9",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.36054764322302013
+    },
+    {
+      "uid": "96cf40f9d3b2d69466161000cd69ae5c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4645359267194685
+    },
+    {
+      "uid": "97487f1632fbab90426f6760a0fe94ea",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.48375267279145584
+    },
+    {
+      "uid": "97487f1632fbab90426f6760a0fe94ea",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.13906975641288333
+    },
+    {
+      "uid": "98e5152e1020930fb007145c1c60648b",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.13706283044976564
+    },
+    {
+      "uid": "993b20b5d910d05b5d79e0de71386a49",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.13706283044976564
+    },
+    {
+      "uid": "993b20b5d910d05b5d79e0de71386a49",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5178345511184634
+    },
+    {
+      "uid": "993b20b5d910d05b5d79e0de71386a49",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.41038513926509257
+    },
+    {
+      "uid": "a4fcfc9e92d6861285d6c5979d2fd54b",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.36310660636355396
+    },
+    {
+      "uid": "a4fcfc9e92d6861285d6c5979d2fd54b",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.280246473434959
+    },
+    {
+      "uid": "a4fcfc9e92d6861285d6c5979d2fd54b",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4423060665967471
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.1987057856243742
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.5327373947912326
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.1418462986377712
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.22446502406132784
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5891575903263133
+    },
+    {
+      "uid": "a7cb6ba9ef6b3878a4284b0d63afecd7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.023222079176224653
+    },
+    {
+      "uid": "aa77ecb82c267ad01e9899413f072025",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2032647918514563
+    },
+    {
+      "uid": "ac02afb2367b89fdcab1b1245e195b27",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.23324398715507488
+    },
+    {
+      "uid": "ac70fe1f8115ac361f2023269c011c3e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.16128405972415827
+    },
+    {
+      "uid": "ac70fe1f8115ac361f2023269c011c3e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.16128405972415827
+    },
+    {
+      "uid": "aeeb186fafcc356f44cae870555f4a0d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4254576738663012
+    },
+    {
+      "uid": "aeeb186fafcc356f44cae870555f4a0d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.05467665440108682
+    },
+    {
+      "uid": "aeeb186fafcc356f44cae870555f4a0d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2908025585423859
+    },
+    {
+      "uid": "aeeb186fafcc356f44cae870555f4a0d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.0
+    },
+    {
+      "uid": "aeeb186fafcc356f44cae870555f4a0d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.12502537674112502
+    },
+    {
+      "uid": "b17eeda399b312140dc40b8445a8e0a5",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.025404911761740312
+    },
+    {
+      "uid": "b17eeda399b312140dc40b8445a8e0a5",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.31245017378605144
+    },
+    {
+      "uid": "b1fed5ab5fbd8a1b2fd93b925849a11c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4124358310732017
+    },
+    {
+      "uid": "b1fed5ab5fbd8a1b2fd93b925849a11c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.24205624629532485
+    },
+    {
+      "uid": "b1fed5ab5fbd8a1b2fd93b925849a11c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.0
+    },
+    {
+      "uid": "b3db52ffec3adfc49eb061af2f2f2846",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5609731965491067
+    },
+    {
+      "uid": "b855dfddb71e240c1990b539533cd1f6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.17128924976701043
+    },
+    {
+      "uid": "bc3ae668f5930dcab54b63a9cfd0896d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.34425071795766726
+    },
+    {
+      "uid": "bc3ae668f5930dcab54b63a9cfd0896d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.45301649772547314
+    },
+    {
+      "uid": "bc3ae668f5930dcab54b63a9cfd0896d",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.7211589278689106
+    },
+    {
+      "uid": "bd441b322153093e69f107a36a9b15d6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.9076913653518028
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.901246903437664
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.25501916763735943
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.31870239311580884
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.08261872542355653
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.0
+    },
+    {
+      "uid": "bdefb86f43d463ae4475291ec837f7d7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.37458270563743357
+    },
+    {
+      "uid": "bea4c7250c8631ddfacf57dfa386caba",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.8194638664017306
+    },
+    {
+      "uid": "c0fec81b63a711ebc1c29a5df6e21b07",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.31561794874461246
+    },
+    {
+      "uid": "c21283c11daebb61004b688f04c27715",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.27918389782878905
+    },
+    {
+      "uid": "c21d2515be8477a92181b9c0035a9884",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.41916207781796105
+    },
+    {
+      "uid": "c37f9221f44e9ca35a49180dc05a7587",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.24387642684365263
+    },
+    {
+      "uid": "c37f9221f44e9ca35a49180dc05a7587",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.6791781957416072
+    },
+    {
+      "uid": "c37f9221f44e9ca35a49180dc05a7587",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4645257578228197
+    },
+    {
+      "uid": "c37f9221f44e9ca35a49180dc05a7587",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.6089794236822286
+    },
+    {
+      "uid": "d060bfe5da35b9cbd05e3dc33e167092",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3500360137528489
+    },
+    {
+      "uid": "d060bfe5da35b9cbd05e3dc33e167092",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.399645725987978
+    },
+    {
+      "uid": "d1075cae00d6198eb840ad42a2df742c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.13635751324226764
+    },
+    {
+      "uid": "d1cd5ab675681cd980ee4dd212d8c53c",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3129330423386363
+    },
+    {
+      "uid": "d2c8a48736cfe925440115558db860ee",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.22126030772578287
+    },
+    {
+      "uid": "db8df8be53722b041b1e649ae0c0b5d4",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.26633672899649863
+    },
+    {
+      "uid": "db8df8be53722b041b1e649ae0c0b5d4",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.14184629863777126
+    },
+    {
+      "uid": "dfba04a156c13a94753a56bbbdd58969",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4424911987504339
+    },
+    {
+      "uid": "dfba04a156c13a94753a56bbbdd58969",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.28808796532198144
+    },
+    {
+      "uid": "e06024d216d36ef2d7cddc8a67cf77a7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.25802633915734985
+    },
+    {
+      "uid": "e06024d216d36ef2d7cddc8a67cf77a7",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.6459797433937418
+    },
+    {
+      "uid": "e1b0f11a76278ee3f33e48e2d81b50d0",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.20905433517262217
+    },
+    {
+      "uid": "e3d27e46b8e06963920efb69f95df6fc",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.0
+    },
+    {
+      "uid": "e535002d3f0d00b98ff8a34754d6472b",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.49618382811849937
+    },
+    {
+      "uid": "e535002d3f0d00b98ff8a34754d6472b",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.325917623236816
+    },
+    {
+      "uid": "e535002d3f0d00b98ff8a34754d6472b",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5463731097229101
+    },
+    {
+      "uid": "e946e1f85b5de2dba4edcf1aebbfdc0a",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.15249335858144542
+    },
+    {
+      "uid": "eb5b94ef4672c2971d18f0d95d51f892",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.483646095386419
+    },
+    {
+      "uid": "eb5b94ef4672c2971d18f0d95d51f892",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5051219780344431
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5375940565784492
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5126312586611013
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4941927606273344
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5936839908188631
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.2956197799212994
+    },
+    {
+      "uid": "f0db9e3e8b9b5080e5752383cceb34f6",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.6280432349089233
+    },
+    {
+      "uid": "f1dcebbb6fbe6d586ddb2c43c781e013",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.03986494970198651
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.08221026942628074
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.6992175218657004
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.054147243815987345
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": 0.36640969525514966
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.12064606642790077
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.0790035285498556
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.16121379797613655
+    },
+    {
+      "uid": "f3e1995993cccfe83056a8deb2e315ff",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3195307341252309
+    },
+    {
+      "uid": "f40ed30e72159a5c839a43fe97e0c905",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4357068925058649
+    },
+    {
+      "uid": "f40ed30e72159a5c839a43fe97e0c905",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.3030600966139064
+    },
+    {
+      "uid": "f40ed30e72159a5c839a43fe97e0c905",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.7198874715995569
+    },
+    {
+      "uid": "f40ed30e72159a5c839a43fe97e0c905",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.5335589003985153
+    },
+    {
+      "uid": "fc73375dda5e5460f7088c78654a945e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.9815404668260799
+    },
+    {
+      "uid": "fc73375dda5e5460f7088c78654a945e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.21012849322486254
+    },
+    {
+      "uid": "fc73375dda5e5460f7088c78654a945e",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.4224593491669262
+    },
+    {
+      "uid": "fe8ddda4ae8c71f7054ca024b82f5c98",
+      "model": "gradient_boosting",
+      "sleep_duration_plus_2h_change": -0.9670288442410317
+    }
+  ],
   "interpretation": "Scenario outputs are model responses, not causal effects. Agreement is summarized by the sign of each model's change."
 }

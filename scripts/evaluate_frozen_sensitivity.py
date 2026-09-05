@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 from pathlib import Path
 
@@ -106,6 +107,11 @@ def evaluate(dataset: str, selected_path: Path, max_windows: int) -> dict[str, o
 
     baseline_lasso = scenario_predictions["lasso"]["current"]
     baseline_gbm = scenario_predictions["gradient_boosting"]["current"]
+    uids = _values(artifact["test"], "uid")[: len(windows)].reshape(-1)
+    duration_changes = {
+        "lasso": scenario_predictions["lasso"]["sleep_duration_plus_2h"] - baseline_lasso,
+        "gradient_boosting": scenario_predictions["gradient_boosting"]["sleep_duration_plus_2h"] - baseline_gbm,
+    }
     summary = {}
     for model_name, predictions in scenario_predictions.items():
         model_summary = {}
@@ -120,6 +126,34 @@ def evaluate(dataset: str, selected_path: Path, max_windows: int) -> dict[str, o
                 "negative_fraction": float(np.mean(changes < 0)),
             }
         summary[model_name] = model_summary
+
+    heterogeneity = {}
+    per_window_rows = []
+    for model_name, changes in duration_changes.items():
+        by_participant: dict[str, list[float]] = {}
+        for uid, change in zip(uids, changes):
+            by_participant.setdefault(str(uid), []).append(float(change))
+            per_window_rows.append({
+                "uid": str(uid),
+                "model": model_name,
+                "sleep_duration_plus_2h_change": float(change),
+            })
+        participant_means = np.asarray(
+            [np.mean(values) for values in by_participant.values()], dtype=float
+        )
+        heterogeneity[model_name] = {
+            "participants": int(len(participant_means)),
+            "negative_fraction": float(np.mean(participant_means < 0)),
+            "near_zero_fraction": float(np.mean(np.isclose(participant_means, 0.0, atol=0.05))),
+            "positive_fraction": float(np.mean(participant_means > 0)),
+            "mean": float(participant_means.mean()),
+            "std": float(participant_means.std(ddof=0)),
+            "quartiles": {
+                "q25": float(np.percentile(participant_means, 25)),
+                "median": float(np.percentile(participant_means, 50)),
+                "q75": float(np.percentile(participant_means, 75)),
+            },
+        }
 
     lasso_selected_coefficients = scaler.scale_ * 0.0
     # A one-standard-deviation shift in one selected standardized input changes
@@ -154,6 +188,8 @@ def evaluate(dataset: str, selected_path: Path, max_windows: int) -> dict[str, o
         },
         "lasso_closed_form_check": coefficient_check,
         "sleep_scenario_summary": summary,
+        "sleep_duration_heterogeneity": heterogeneity,
+        "sleep_duration_per_window": per_window_rows,
         "interpretation": (
             "Scenario outputs are model responses, not causal effects. "
             "Agreement is summarized by the sign of each model's change."
