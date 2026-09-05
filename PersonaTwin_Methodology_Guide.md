@@ -5,10 +5,11 @@
 
 > **Implementation status (read before presenting this guide to anyone):**
 >
-> - The Sensitivity Engine described in Sections 3-4 and 7 is implemented and
->   has been run end-to-end for personalized StudentLife and CES models. The
->   StudentLife run processed 59 windows and the CES run processed 3,599
->   windows. HBN has not yet been sensitivity-tested.
+> - The current validated CES primary analysis uses a delta-PAM target with
+>   1,982 train, 206 validation, and 212 test windows. The frozen primary
+>   model is a 50-feature train-only selected Lasso; a bounded Gradient
+>   Boosting model is retained as a secondary comparison. The older GRU and
+>   3,599-window sensitivity outputs below are historical snapshots.
 > - Two real bugs found and fixed since this guide's numbers were written:
 >   (1) the personalized model's participant embedding wasn't being passed
 >   through at all in the univariate path, and was being passed the wrong
@@ -17,11 +18,10 @@
 >   values across many windows (most visibly on `sleep`). Margin is now
 >   computed via linear interpolation between grid points on a 101-point
 >   grid, giving a continuous estimate instead of a quantized one.
-> - **Section 5's older population tables are historical snapshots.** The
->   current results to cite are the personalized outputs generated after the
->   PAM-history feature was added and the uncertainty-model retraining was
->   completed. Do not mix the old population files with the new personalized
->   files.
+> - **Section 5's older GRU and population tables are historical snapshots.**
+>   Cite the frozen Lasso/LOPO/scenario-aware results in the current results
+>   section below. Do not present the historical GRU tables as the primary
+>   predictive result.
 
 ---
 
@@ -29,7 +29,7 @@
 **PersonaTwin** is a personalized digital twin framework that models individual mental-state dynamics using multimodal behavioral sensing data. 
 
 * **The Core Problem**: Traditional mental health tracking relies on population averages or simple point-in-time predictions. They fail to explain *how* a specific individual's mental state changes in response to behavioral changes, or *how much* behavior change is needed to see an effect.
-* **The Core Solution**: We build personalized, uncertainty-aware deep learning twins (GRUs). We then query these twins using a **Sensitivity Engine** that perturbs real input behaviors (in real-world units like hours of sleep or screen time) to map a continuous sensitivity profile (slope, curvature, and margin) for each individual.
+* **The Core Solution**: We evaluate personalized temporal predictors, including the GRU candidate and the validated frozen Lasso primary model. We then query the selected model using a **Sensitivity Engine** that perturbs real input behaviors (in real-world units like hours of sleep or screen time) to map a response profile for each individual.
 * **Unified Scope**: The project combines daily passive sensing datasets (CES and StudentLife) with clinical diagnostics (Healthy Brain Network's ADHD/ASD actigraphy cohort) to evaluate whether these sensitivity profiles differ across neurodivergent populations using a shared analytical engine.
 
 ---
@@ -118,10 +118,12 @@ graph TD
     3. Z-score normalize features using **mean and standard deviation computed solely from the training data**.
   * **Sequence Dimensions**:
     * StudentLife: 1458 training, 88 validation, and 59 test windows (18 model features).
-    * CES: 25576 training, 4112 validation, and 3599 test windows (571 model features).
+    * CES delta analysis: 1,982 training, 206 validation, and 212 test windows
+      (3,997 expanded sequence features: 571 base features plus six temporal
+      variants per base feature).
 
 ### Stage 3: Personalized Temporal Modeling (The Digital Twin)
-* **Basic Level**: A standard model learns the "average student." But everyone is different—six hours of sleep makes one person energetic and another exhausted. We train a deep recurrent network (GRU) that adapts to each participant.
+* **Basic Level**: A standard model learns the "average student." But everyone is different—six hours of sleep makes one person energetic and another exhausted. The project evaluates a deep recurrent network (GRU) candidate and a regularized frozen-feature Lasso primary model.
 * **Advanced Level**:
   * **Adapter Layer**: We inject a learned **participant embedding** (a latent representation vector unique to each person) into the GRU. The embedding shifts the network's internal representations, customizing predictions.
   * **ADHD/ASD Customization (HBN Branch)**: For the HBN cohort, we add a **diagnostic-group embedding** (ADHD, ASD, Neurotypical) alongside the individual participant embedding. This lets the network explicitly capture structural, diagnostic-level behavioral differences.
@@ -157,13 +159,89 @@ Use this table to prove that the codebase is highly generalizable and modular.
 
 ## 5. Concrete Numbers Ready for Presentation
 
-The current personalized results below were generated after retraining both
-models with PAM history, MSE warmup, direct mean-loss weighting, and
-validation-MAE checkpoint selection. These are model-sensitivity estimates,
-not causal effects. Older population snapshots later in this section are kept
-for historical comparison and must not be presented as the current results.
+The current validated results below come from the frozen CES delta-PAM
+protocol. The primary model is a train-only selected Lasso, with bounded
+Gradient Boosting as a secondary comparison. These are model-sensitivity
+estimates, not causal effects. Older GRU and population snapshots later in
+this section are retained for historical comparison only.
 
-### Current personalized GRU predictive quality
+### Current validated CES delta results
+
+The current primary analysis predicts next-day PAM change,
+$\Delta PAM = PAM_{t+1} - PAM_t$, from the existing CES delta artifact. Feature
+selection is performed only on the training split. The primary model is a
+standardized Lasso with `alpha=0.01` and the top 50 train-only features. The
+zero-change baseline predicts $\Delta PAM=0$ for every window.
+
+| Model | Test MAE | Test RMSE | Correlation |
+|---|---:|---:|---:|
+| Zero-change baseline | 3.892 | 5.466 | not defined |
+| Participant-mean baseline | 4.215 | 5.664 | 0.026 |
+| Lasso, accuracy-only top 50 | **3.475** | **4.221** | **0.637** |
+| Ridge, accuracy-only top 50 | 3.480 | 4.224 | 0.636 |
+| Gradient Boosting, bounded secondary model | 3.588 | 4.422 | 0.588 |
+| Previous GRU delta model | 4.519 | 5.882 | 0.003 |
+
+The Lasso improves over the zero-change baseline by approximately 10.7% in
+MAE and 22.8% in RMSE. It is therefore the primary predictive model; the GRU
+is retained as a documented negative result rather than a primary model.
+
+### Leave-participant-out generalization
+
+The accuracy-only Lasso was evaluated with Leave-One-Group-Out validation over
+206 participants. Feature selection and standardization were repeated inside
+each fold using only the fold's training participants.
+
+| Metric | Mean | SD | Finite participants |
+|---|---:|---:|---:|
+| MAE | 3.545 | 1.221 | 206 |
+| RMSE | 4.150 | 1.352 | 206 |
+| Correlation | **0.588** | 0.382 | 194 |
+
+Twelve participants had undefined correlation because their held-out PAM
+changes had near-zero variance. They are excluded only from the correlation
+aggregate. The correlation variation is a substantive participant-level
+finding, not a value to smooth away.
+
+### Scenario-compatible model and sensitivity results
+
+For counterfactual analysis, a second frozen 50-feature manifest pins the raw
+sleep levers `sleep_duration`, `sleep_start`, and `sleep_end` across all seven
+lookback days, then fills the remaining slots using the same train-only
+ranking. This preserves predictive performance while ensuring that a physical
+sleep intervention can reach the model.
+
+| Model | Test MAE | Test RMSE | Correlation |
+|---|---:|---:|---:|
+| Scenario-aware Lasso | **3.482** | **4.170** | **0.649** |
+| Scenario-aware Gradient Boosting | 3.561 | 4.362 | 0.603 |
+
+Scenario-aware LOPO performance remained strong: MAE $3.491 \pm 1.277$,
+RMSE $4.080 \pm 1.389$, and correlation $0.610 \pm 0.347$ across 206
+participants, with 194 finite participant correlations.
+
+The physically consistent sleep scenarios produced these mean predicted
+changes over 212 test windows:
+
+| Scenario | Lasso | Gradient Boosting |
+|---|---:|---:|
+| Sleep duration +2 hours | -0.416 | -0.329 |
+| Bedtime 1 hour earlier | +0.094 | +0.054 |
+| Both interventions | -0.334 | -0.252 |
+
+The Lasso sensitivity calculation was verified against its closed-form
+coefficient with absolute numerical error below $9\times10^{-16}$. The raw
+sleep-duration/next-day-PAM correlation was approximately -0.008, so these are
+conditional model responses, not marginal or causal effects.
+
+Across the five behavioral directions, a +1 standardized-SD audit gave mean
+changes of sleep -0.656 (Lasso), activity +0.685, mobility -0.189, and screen
+0.000; the corresponding Gradient Boosting changes were -0.415, +0.449,
+-0.358, and 0.000. CES has no mapped social features. These directional
+results are model sensitivity outputs and should not be interpreted as
+behavioral prescriptions.
+
+### Historical personalized GRU predictive quality
 
 | Dataset | Test windows | PAM MAE | PAM RMSE | Actual/predicted correlation |
 |---|---:|---:|---:|---:|
@@ -175,11 +253,11 @@ prediction collapse, and still smooth some short-term individual fluctuations.
 These metrics support a useful predictive baseline, but not a claim of highly
 accurate fluctuation tracking.
 
-### Current personalized sensitivity outputs
+### Historical personalized GRU sensitivity outputs
 
-StudentLife was regenerated for 59 test windows and 23 participants. CES was
-regenerated for 3,599 test windows and 202 participants. The current CES
-personalized univariate means are:
+StudentLife was regenerated for 59 test windows and 23 participants. The
+following CES values belong to the historical personalized-GRU run over 3,599
+test windows and 202 participants:
 
 | Direction | Slope mean | Curvature mean | Margin mean | Participant count |
 |---|---:|---:|---:|---:|
@@ -225,9 +303,11 @@ Interpretation:
 
 The strongest pairwise signal is **sleep:screen** (interaction mean $\approx 0.0097$), while the remaining pairwise effects are comparatively small and often close to zero. This suggests that the primary StudentLife signal is dominated by individual behavioral directions rather than strong two-way interactions.
 
-### Current verified output snapshots
+### Historical verified GRU output snapshots
 
-These values reflect the current generated outputs from the verified pipeline and should be read as a snapshot of the current model sensitivity estimates rather than as historical claims from an earlier draft.
+These values reflect generated outputs from the historical GRU/personalized
+pipeline. They are retained for engineering comparison and should not be
+confused with the current frozen-Lasso results above.
 
 #### Historical CES population snapshot (superseded)
 
@@ -239,7 +319,9 @@ These values reflect the current generated outputs from the verified pipeline an
 | sleep | -0.045856 | -0.003242 | inf |
 | social | NaN | NaN | NaN |
 
-This is a historical population-model snapshot and is superseded by the current personalized CES table above. It is retained only to preserve experiment history.
+This is a historical population-model snapshot and is superseded by the current
+scenario-aware CES table above. It is retained only to preserve experiment
+history.
 
 #### Historical CES interaction snapshot (superseded)
 
@@ -252,11 +334,17 @@ This is a historical population-model snapshot and is superseded by the current 
 | sleep | mobility | 0.000000000000e+00 | 0.000000000000e+00 | 0.000000000000e+00 | 0.000000000000e+00 | 0 |
 | sleep | screen | -1.113704559336e-04 | 2.620990805857e-04 | -1.118146456205e-03 | 1.941025257110e-04 | 25 |
 
-This historical snapshot must not be described as the current personalized result. The current personalized CES interaction run completed all 6 direction pairs across 3,599 windows; its interaction means remain small, with the largest absolute mean approximately $3.9 \times 10^{-3}$ (sleep:screen).
+This historical snapshot must not be described as the current personalized
+result. The historical personalized CES interaction run completed all six
+direction pairs across 3,599 windows; its interaction means remain small,
+with the largest absolute mean approximately $3.9 \times 10^{-3}$
+(sleep:screen).
 
-### Current CES personalized pairwise interaction sensitivity
+### Historical CES personalized pairwise interaction sensitivity
 
-The CES personalized interaction results completed technically, but the values are mostly small. This is a model result rather than a computation failure. The current personalized pairwise interaction summary is:
+The historical CES personalized-GRU interaction results completed technically,
+but the values are mostly small. This is a model result rather than a
+computation failure. The historical pairwise interaction summary is:
 
 | direction_a | direction_b | mean | std | minimum | maximum | nonzero |
 |---|---|---:|---:|---:|---:|---:|
@@ -267,11 +355,19 @@ The CES personalized interaction results completed technically, but the values a
 | sleep | mobility | -0.000568 | 0.012810 | -0.312482 | +0.146410 | 3599 |
 | sleep | screen | +0.003934 | 0.031104 | -0.154701 | +0.583326 | 3599 |
 
-This indicates that CES pairwise interactions are small in mean relative to the univariate sensitivity terms, although individual windows can show larger positive or negative responses. The result is not an algorithmic failure; it suggests that the current CES model is driven more by individual behavioral directions than by stable population-level behavioral combinations.
+This indicates that the historical CES pairwise interactions are small in mean
+relative to the univariate sensitivity terms, although individual windows can
+show larger positive or negative responses. The result is not an algorithmic
+failure; it suggests that this historical CES model was driven more by
+individual behavioral directions than by stable population-level combinations.
 
-### CES univariate sensitivity status
+### Historical CES personalized GRU sensitivity status
 
-**CES personalized univariate sensitivity is working and producing numeric results.** The current implementation completed 3,599 windows across 202 participants. The pairwise interaction analysis also completed all six CES pairs; its mean effects are small, while window-level variability is retained in the exported profiles. This should be reported as model sensitivity, not as causal evidence.
+The older personalized-GRU implementation completed 3,599 windows across 202
+participants and all six CES direction pairs. Those outputs remain useful as
+historical engineering evidence, but they are superseded as the primary
+predictive/sensitivity results by the frozen Lasso analysis above. All such
+outputs should be reported as model sensitivity, not causal evidence.
 
 > [!NOTE]
 > The CES and StudentLife findings should be framed as **model sensitivity**, not causal effects. They explain which behavioral directions the trained model relies on most strongly and whether two-way interactions materially change the prediction beyond the sum of the independent effects.
