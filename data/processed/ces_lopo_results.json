@@ -1,0 +1,32 @@
+{
+  "dataset": "ces",
+  "predict_delta": true,
+  "cache": "C:\\Users\\Admin\\OneDrive\\Desktop\\personatwin\\data\\processed\\ces_sequences_delta.pt",
+  "protocol": {
+    "split": "LeaveOneGroupOut over training windows",
+    "groups": "participant uid",
+    "feature_selection": "top absolute train-fold f_regression score",
+    "top_k": 50,
+    "standardization": "fit on each fold training participants",
+    "model": "StandardScaler + Lasso(alpha=0.01)",
+    "participants": 206
+  },
+  "aggregate": {
+    "mae": {
+      "mean": 3.544657607909107,
+      "std": 1.2206810434351925,
+      "count": 206
+    },
+    "rmse": {
+      "mean": 4.149647051352196,
+      "std": 1.35165853181724,
+      "count": 206
+    },
+    "corr": {
+      "mean": 0.5881092136030069,
+      "std": 0.38211301687119137,
+      "count": 194
+    }
+  },
+  "participant_table": "data\\processed\\ces_lopo_per_participant.csv"
+}
