@@ -1,0 +1,310 @@
+{
+  "dataset": "ces",
+  "predict_delta": true,
+  "cache_feature_count": 3997,
+  "lookback_days": 7,
+  "selection": "top absolute train-only f_regression score",
+  "top_k": 50,
+  "selected_features": [
+    {
+      "flattened_index": 27978,
+      "day_offset": 6,
+      "feature_index": 3996,
+      "feature_name": "pam_history_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 24552,
+      "day_offset": 6,
+      "feature_index": 570,
+      "feature_name": "pam_history"
+    },
+    {
+      "flattened_index": 27975,
+      "day_offset": 6,
+      "feature_index": 3993,
+      "feature_name": "pam_history_roll_mean7"
+    },
+    {
+      "flattened_index": 27977,
+      "day_offset": 6,
+      "feature_index": 3995,
+      "feature_name": "pam_history_trend7"
+    },
+    {
+      "flattened_index": 27974,
+      "day_offset": 6,
+      "feature_index": 3992,
+      "feature_name": "pam_history_delta3"
+    },
+    {
+      "flattened_index": 5655,
+      "day_offset": 1,
+      "feature_index": 1658,
+      "feature_name": "audio_amp_mean_hr_2_delta3"
+    },
+    {
+      "flattened_index": 15359,
+      "day_offset": 3,
+      "feature_index": 3368,
+      "feature_name": "other_playing_num_hr_19_delta3"
+    },
+    {
+      "flattened_index": 5589,
+      "day_offset": 1,
+      "feature_index": 1592,
+      "feature_name": "audio_amp_mean_hr_1_delta3"
+    },
+    {
+      "flattened_index": 15164,
+      "day_offset": 3,
+      "feature_index": 3173,
+      "feature_name": "other_playing_duration_hr_14_trend7"
+    },
+    {
+      "flattened_index": 4211,
+      "day_offset": 1,
+      "feature_index": 214,
+      "feature_name": "audio_amp_std_hr_3"
+    },
+    {
+      "flattened_index": 12939,
+      "day_offset": 3,
+      "feature_index": 948,
+      "feature_name": "act_running_hr_1_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 26051,
+      "day_offset": 6,
+      "feature_index": 2069,
+      "feature_name": "audio_convo_num_ep_0_trend7"
+    },
+    {
+      "flattened_index": 3287,
+      "day_offset": 0,
+      "feature_index": 3287,
+      "feature_name": "other_playing_num_ep_1_trend7"
+    },
+    {
+      "flattened_index": 5593,
+      "day_offset": 1,
+      "feature_index": 1596,
+      "feature_name": "audio_amp_mean_hr_1_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 27185,
+      "day_offset": 6,
+      "feature_index": 3203,
+      "feature_name": "other_playing_duration_hr_19_trend7"
+    },
+    {
+      "flattened_index": 19248,
+      "day_offset": 4,
+      "feature_index": 3260,
+      "feature_name": "other_playing_duration_hr_7_delta3"
+    },
+    {
+      "flattened_index": 26640,
+      "day_offset": 6,
+      "feature_index": 2658,
+      "feature_name": "loc_home_unlock_num_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 5761,
+      "day_offset": 1,
+      "feature_index": 1764,
+      "feature_name": "audio_amp_std_hr_1_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 4167,
+      "day_offset": 1,
+      "feature_index": 170,
+      "feature_name": "audio_amp_mean_hr_1"
+    },
+    {
+      "flattened_index": 4986,
+      "day_offset": 1,
+      "feature_index": 989,
+      "feature_name": "act_running_hr_16_trend7"
+    },
+    {
+      "flattened_index": 5852,
+      "day_offset": 1,
+      "feature_index": 1855,
+      "feature_name": "audio_amp_std_hr_3_delta1"
+    },
+    {
+      "flattened_index": 3007,
+      "day_offset": 0,
+      "feature_index": 3007,
+      "feature_name": "loc_visit_num_hr_17_delta1"
+    },
+    {
+      "flattened_index": 4195,
+      "day_offset": 1,
+      "feature_index": 198,
+      "feature_name": "audio_amp_std_hr_1"
+    },
+    {
+      "flattened_index": 26063,
+      "day_offset": 6,
+      "feature_index": 2081,
+      "feature_name": "audio_convo_num_ep_2_trend7"
+    },
+    {
+      "flattened_index": 5565,
+      "day_offset": 1,
+      "feature_index": 1568,
+      "feature_name": "audio_amp_mean_ep_1_delta3"
+    },
+    {
+      "flattened_index": 15730,
+      "day_offset": 3,
+      "feature_index": 3739,
+      "feature_name": "unlock_num_hr_19_delta1"
+    },
+    {
+      "flattened_index": 1012,
+      "day_offset": 0,
+      "feature_index": 1012,
+      "feature_name": "act_running_hr_2_roll_std7"
+    },
+    {
+      "flattened_index": 12053,
+      "day_offset": 3,
+      "feature_index": 62,
+      "feature_name": "act_running_hr_1"
+    },
+    {
+      "flattened_index": 17217,
+      "day_offset": 4,
+      "feature_index": 1229,
+      "feature_name": "act_still_hr_6_trend7"
+    },
+    {
+      "flattened_index": 13384,
+      "day_offset": 3,
+      "feature_index": 1393,
+      "feature_name": "act_walking_ep_0_delta1"
+    },
+    {
+      "flattened_index": 25484,
+      "day_offset": 6,
+      "feature_index": 1502,
+      "feature_name": "act_walking_hr_21_delta3"
+    },
+    {
+      "flattened_index": 973,
+      "day_offset": 0,
+      "feature_index": 973,
+      "feature_name": "act_running_hr_14_delta1"
+    },
+    {
+      "flattened_index": 21204,
+      "day_offset": 5,
+      "feature_index": 1219,
+      "feature_name": "act_still_hr_5_delta1"
+    },
+    {
+      "flattened_index": 22558,
+      "day_offset": 5,
+      "feature_index": 2573,
+      "feature_name": "loc_food_audio_voice_trend7"
+    },
+    {
+      "flattened_index": 27976,
+      "day_offset": 6,
+      "feature_index": 3994,
+      "feature_name": "pam_history_roll_std7"
+    },
+    {
+      "flattened_index": 27353,
+      "day_offset": 6,
+      "feature_index": 3371,
+      "feature_name": "other_playing_num_hr_19_trend7"
+    },
+    {
+      "flattened_index": 26292,
+      "day_offset": 6,
+      "feature_index": 2310,
+      "feature_name": "audio_voice_hr_16_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 4940,
+      "day_offset": 1,
+      "feature_index": 943,
+      "feature_name": "act_running_hr_1_delta1"
+    },
+    {
+      "flattened_index": 10603,
+      "day_offset": 2,
+      "feature_index": 2609,
+      "feature_name": "loc_food_unlock_num_trend7"
+    },
+    {
+      "flattened_index": 15658,
+      "day_offset": 3,
+      "feature_index": 3667,
+      "feature_name": "unlock_num_ep_3_delta1"
+    },
+    {
+      "flattened_index": 27973,
+      "day_offset": 6,
+      "feature_index": 3991,
+      "feature_name": "pam_history_delta1"
+    },
+    {
+      "flattened_index": 19227,
+      "day_offset": 4,
+      "feature_index": 3239,
+      "feature_name": "other_playing_duration_hr_3_trend7"
+    },
+    {
+      "flattened_index": 3475,
+      "day_offset": 0,
+      "feature_index": 3475,
+      "feature_name": "sleep_start_delta1"
+    },
+    {
+      "flattened_index": 1682,
+      "day_offset": 0,
+      "feature_index": 1682,
+      "feature_name": "audio_amp_mean_hr_23_delta3"
+    },
+    {
+      "flattened_index": 5757,
+      "day_offset": 1,
+      "feature_index": 1760,
+      "feature_name": "audio_amp_std_hr_1_delta3"
+    },
+    {
+      "flattened_index": 25394,
+      "day_offset": 6,
+      "feature_index": 1412,
+      "feature_name": "act_walking_ep_3_delta3"
+    },
+    {
+      "flattened_index": 26303,
+      "day_offset": 6,
+      "feature_index": 2321,
+      "feature_name": "audio_voice_hr_18_trend7"
+    },
+    {
+      "flattened_index": 3281,
+      "day_offset": 0,
+      "feature_index": 3281,
+      "feature_name": "other_playing_num_ep_0_trend7"
+    },
+    {
+      "flattened_index": 1011,
+      "day_offset": 0,
+      "feature_index": 1011,
+      "feature_name": "act_running_hr_2_roll_mean7"
+    },
+    {
+      "flattened_index": 20700,
+      "day_offset": 5,
+      "feature_index": 715,
+      "feature_name": "act_in_vehicle_hr_5_delta1"
+    }
+  ]
+}
