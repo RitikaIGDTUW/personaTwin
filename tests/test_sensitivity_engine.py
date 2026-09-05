@@ -43,11 +43,26 @@ def test_direction_feature_indices_and_alpha_bounds():
     assert default_direction_alphas(lower, upper, 5)[0] <= lower
     assert default_direction_alphas(lower, upper, 5)[-1] >= upper
 
-    window = torch.tensor([[0.0, 10.0, 3.0, 1.0, 20.0]], dtype=torch.float32)
+    feature_names = [
+        "sleep_mean",
+        "activity_steps",
+        "activity_steps_delta1",
+        "activity_steps_roll_mean7",
+        "activity_steps_dev_from_own_mean",
+        "activity_steps_trend7",
+        "activity_steps_roll_std7",
+        "social_calls",
+        "gps_distance",
+        "screen_unlocks",
+    ]
+    direction_map["activity"] = ["activity_steps"]
+    window = torch.tensor([[0.0, 10.0, 2.0, 10.0, 0.0, 1.0, 3.0, 3.0, 1.0, 20.0]], dtype=torch.float32)
     expected_shift = artifact["train"]["X"][:, :, 1].std(unbiased=False).item()
     perturbed = perturb_window_for_direction(window, artifact, feature_names, direction_map, "activity", alpha=1.0)
     assert torch.allclose(perturbed[:, 1], window[:, 1] + torch.tensor([expected_shift], dtype=torch.float32))
-    assert torch.allclose(perturbed[:, [0, 2, 3, 4]], window[:, [0, 2, 3, 4]])
+    assert torch.allclose(perturbed[:, 3], window[:, 3] + expected_shift)
+    assert torch.allclose(perturbed[:, 4], window[:, 4] + expected_shift)
+    assert torch.allclose(perturbed[:, [0, 2, 5, 6, 7, 8, 9]], window[:, [0, 2, 5, 6, 7, 8, 9]])
 
 
 def test_summarize_direction_response_returns_guarded_metrics():

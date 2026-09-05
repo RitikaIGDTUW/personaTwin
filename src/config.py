@@ -43,6 +43,8 @@ BEHAVIORAL_DIRECTIONS = [
 
 CES_SEQUENCES_CACHE = PROCESSED_DIR / "ces_sequences.pt"
 STUDENTLIFE_SEQUENCES_CACHE = PROCESSED_DIR / "studentlife_sequences.pt"
+CES_DELTA_SEQUENCES_CACHE = PROCESSED_DIR / "ces_sequences_delta.pt"
+STUDENTLIFE_DELTA_SEQUENCES_CACHE = PROCESSED_DIR / "studentlife_sequences_delta.pt"
 BEHAVIORAL_DIRECTION_MAP_CACHE = INTERIM_DIR / "behavioral_direction_map.json"
 CES_DIRECTION_MAP_CACHE = INTERIM_DIR / "ces_behavioral_direction_map.json"
 STUDENTLIFE_DIRECTION_MAP_CACHE = INTERIM_DIR / "studentlife_behavioral_direction_map.json"
@@ -50,3 +52,17 @@ MODEL_CHECKPOINT_DIR = PROCESSED_DIR / "checkpoints"
 MODEL_LOG_DIR = PROCESSED_DIR / "logs"
 MODEL_CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def sequence_cache_path(dataset: str, predict_delta: bool = False) -> Path:
+    """Return the dataset cache path for absolute or delta PAM targets."""
+    caches = {
+        ("studentlife", False): STUDENTLIFE_SEQUENCES_CACHE,
+        ("studentlife", True): STUDENTLIFE_DELTA_SEQUENCES_CACHE,
+        ("ces", False): CES_SEQUENCES_CACHE,
+        ("ces", True): CES_DELTA_SEQUENCES_CACHE,
+    }
+    try:
+        return caches[(dataset, predict_delta)]
+    except KeyError as error:
+        raise ValueError("dataset must be 'studentlife' or 'ces'") from error

@@ -14,7 +14,13 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.sensitivity import alpha_for_real_shift, plausible_alpha_bounds
+from src.counterfactuals import (
+    alpha_for_real_shift,
+    perturb_window_for_real_shift,
+    perturb_sleep_schedule,
+    raw_value_for_window,
+)
+from src.sensitivity import plausible_alpha_bounds
 
 SENS_DIR = ROOT / "data" / "processed" / "sensitivity"
 DIRECTIONS = ["sleep", "activity", "mobility", "screen"]
@@ -148,6 +154,27 @@ def main():
         artifact = torch.load(SEQUENCE_PATH, map_location="cpu", weights_only=False)
         direction_map = json.loads(CES_DIRECTION_MAP_PATH.read_text())
         sleep_feature = direction_map["sleep"][0]
+        actual_window = artifact["test"]["X"][0]
+        counterfactual_window = perturb_window_for_real_shift(
+            actual_window,
+            artifact,
+            sleep_feature,
+            real_shift=2.0,
+        )
+        current_value = raw_value_for_window(
+            actual_window,
+            artifact,
+            artifact["metadata"]["feature_names"],
+            direction_map,
+            "sleep",
+        )
+        counterfactual_value = raw_value_for_window(
+            counterfactual_window,
+            artifact,
+            artifact["metadata"]["feature_names"],
+            direction_map,
+            "sleep",
+        )
         lower_alpha, upper_alpha = plausible_alpha_bounds(
             artifact,
             artifact["metadata"]["feature_names"],
@@ -160,6 +187,35 @@ def main():
         print("requested_sleep_shift_hours=2.0")
         print(f"requested_alpha={requested_alpha:.6f}")
         print(f"bounded_alpha={demo_alpha:.6f}")
+        print(f"current_{sleep_feature}={current_value[sleep_feature]:.6f}")
+        print(f"counterfactual_{sleep_feature}={counterfactual_value[sleep_feature]:.6f}")
+        print(f"unchanged_sleep_start={current_value['sleep_start'] == counterfactual_value['sleep_start']}")
+        print(f"unchanged_sleep_end={current_value['sleep_end'] == counterfactual_value['sleep_end']}")
+
+        scenarios = {
+            "duration_only": (2.0, 0.0),
+            "bedtime_only": (0.0, -1.0),
+            "duration_and_bedtime": (2.0, -1.0),
+        }
+        for label, (duration_shift, bedtime_shift) in scenarios.items():
+            scenario_window = perturb_sleep_schedule(
+                actual_window,
+                artifact,
+                duration_shift_hours=duration_shift,
+                bedtime_shift_hours=bedtime_shift,
+            )
+            scenario_values = raw_value_for_window(
+                scenario_window,
+                artifact,
+                artifact["metadata"]["feature_names"],
+                direction_map,
+                "sleep",
+            )
+            print(
+                f"scenario={label} duration={scenario_values['sleep_duration']:.3f} "
+                f"start={scenario_values['sleep_start']:.3f} "
+                f"end={scenario_values['sleep_end']:.3f}"
+            )
 
     radar_scores = {}
     for d in DIRECTIONS:

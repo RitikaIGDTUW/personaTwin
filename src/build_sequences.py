@@ -9,10 +9,9 @@ import pandas as pd
 from src.behavioral_directions import build_direction_map
 from src.config import (
     CES_DIRECTION_MAP_CACHE,
-    CES_SEQUENCES_CACHE,
+    sequence_cache_path,
     STUDENTLIFE_DIRECTION_MAP_CACHE,
     STUDENTLIFE_MODEL_DF_CACHE,
-    STUDENTLIFE_SEQUENCES_CACHE,
 )
 from src.datasets import build_sequences
 from src.preprocess_ces import (
@@ -59,16 +58,16 @@ def _ces_inputs() -> tuple[pd.DataFrame, list[str], list[str], object]:
 def build_dataset_sequences(
     dataset: str,
     force: bool = False,
+    predict_delta: bool = False,
 ) -> dict:
     """Build the default PAM-first sequence artifact for one dataset."""
     if dataset == "studentlife":
         model_df, feature_names, target_names, direction_cache = _studentlife_inputs()
-        cache_path = STUDENTLIFE_SEQUENCES_CACHE
     elif dataset == "ces":
         model_df, feature_names, target_names, direction_cache = _ces_inputs()
-        cache_path = CES_SEQUENCES_CACHE
     else:
         raise ValueError("dataset must be 'studentlife' or 'ces'")
+    cache_path = sequence_cache_path(dataset, predict_delta=predict_delta)
 
     direction_map = build_direction_map(
         feature_names,
@@ -86,6 +85,7 @@ def build_dataset_sequences(
         direction_map=direction_map,
         force=force,
         cache_path=cache_path,
+        predict_delta=predict_delta,
     )
 
     for split_name in ("train", "val", "test"):
@@ -108,8 +108,17 @@ def main() -> None:
         action="store_true",
         help="rebuild the direction map and sequence cache",
     )
+    parser.add_argument(
+        "--predict-delta",
+        action="store_true",
+        help="predict next-day PAM change instead of next-day PAM",
+    )
     args = parser.parse_args()
-    build_dataset_sequences(args.dataset, force=args.force)
+    build_dataset_sequences(
+        args.dataset,
+        force=args.force,
+        predict_delta=args.predict_delta,
+    )
 
 
 if __name__ == "__main__":

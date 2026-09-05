@@ -1,6 +1,3 @@
-
-
-
 """Train and evaluate the population PAM GRU baseline.
 
 This script is GPU-ready for Colab/Kaggle and remains CPU-safe for small
@@ -21,10 +18,9 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from src.config import (
-    CES_SEQUENCES_CACHE,
     MODEL_CHECKPOINT_DIR,
     MODEL_LOG_DIR,
-    STUDENTLIFE_SEQUENCES_CACHE,
+    sequence_cache_path,
 )
 from src.model import (
     PersonalizedGRU,
@@ -50,16 +46,13 @@ def resolve_device(requested: str) -> torch.device:
     return torch.device(requested)
 
 
-def load_sequence_artifact(dataset: str) -> dict:
-    cache_path = (
-        STUDENTLIFE_SEQUENCES_CACHE
-        if dataset == "studentlife"
-        else CES_SEQUENCES_CACHE
-    )
+def load_sequence_artifact(dataset: str, predict_delta: bool = False) -> dict:
+    cache_path = sequence_cache_path(dataset, predict_delta=predict_delta)
     if not cache_path.exists():
         raise FileNotFoundError(
             f"Missing {cache_path}. Run: "
-            f"python -m src.build_sequences {dataset} --force"
+            f"python -m src.build_sequences {dataset}"
+            f" {'--predict-delta' if predict_delta else ''} --force"
         )
     return torch.load(cache_path, map_location="cpu", weights_only=False)
 
@@ -118,13 +111,44 @@ def run_epoch(
     return total_loss / max(total_rows, 1)
 
 
+def _safe_corr(predicted: torch.Tensor, observed: torch.Tensor) -> float:
+    """Pearson correlation between predicted and observed values.
+
+    In predict_delta mode this IS the "first-difference correlation" the
+    original issue flagged as very low — the direct check for whether the
+    model tracks day-to-day change rather than just predicting a constant.
+    Unlike mae/rmse, this is NOT translation-invariant, so it isn't
+    redundant with the delta-scale error metrics above.
+    """
+    pred_flat = predicted.flatten().double()
+    obs_flat = observed.flatten().double()
+    if pred_flat.numel() < 2:
+        return float("nan")
+    pred_centered = pred_flat - pred_flat.mean()
+    obs_centered = obs_flat - obs_flat.mean()
+    denom = pred_centered.norm() * obs_centered.norm()
+    if denom.item() == 0:
+        return float("nan")
+    return (pred_centered @ obs_centered / denom).item()
+
+
 def evaluate(
     model: PopulationGRU,
     loader: DataLoader,
     device: torch.device,
     target_mean: torch.Tensor | None = None,
     target_std: torch.Tensor | None = None,
+    baseline: torch.Tensor | None = None,
 ) -> dict[str, float]:
+    """Compute error metrics.
+
+    If ``baseline`` is given (the artifact's per-window previous-day target,
+    present whenever the sequence cache was built with predict_delta=True),
+    also reports abs_mae/abs_rmse on RECONSTRUCTED absolute PAM
+    (baseline + prediction), so delta-trained models stay comparable to
+    absolute-trained ones. Relies on the loader having shuffle=False so row
+    order matches ``baseline`` order exactly.
+    """
     model.eval()
     predictions = []
     targets = []
@@ -134,7 +158,10 @@ def evaluate(
             targets.append(target)
 
     if not predictions:
-        return {"mse": float("nan"), "mae": float("nan"), "rmse": float("nan")}
+        metrics = {"mse": float("nan"), "mae": float("nan"), "rmse": float("nan")}
+        if baseline is not None:
+            metrics.update({"abs_mae": float("nan"), "abs_rmse": float("nan")})
+        return metrics
 
     predicted = torch.cat(predictions)
     observed = torch.cat(targets)
@@ -143,11 +170,28 @@ def evaluate(
         observed = observed * target_std + target_mean
     error = predicted - observed
     mse = torch.mean(error.square()).item()
-    return {
+    metrics = {
         "mse": mse,
         "mae": torch.mean(error.abs()).item(),
         "rmse": float(np.sqrt(mse)),
+        "corr": _safe_corr(predicted, observed),
     }
+    if baseline is not None:
+        baseline = baseline.float()
+        abs_predicted = baseline + predicted
+        abs_observed = baseline + observed
+        abs_error = abs_predicted - abs_observed
+        abs_mse = torch.mean(abs_error.square()).item()
+        metrics["abs_mae"] = torch.mean(abs_error.abs()).item()
+        metrics["abs_rmse"] = float(np.sqrt(abs_mse))
+    return metrics
+    """Create a stable participant-to-embedding index across all splits."""
+    identifiers = []
+    for split_name in ("train", "val", "test"):
+        values = artifact[split_name]["uid"]
+        values = values.tolist() if torch.is_tensor(values) else values
+        identifiers.extend(str(value) for value in values)
+    return {identifier: index for index, identifier in enumerate(sorted(set(identifiers)))}
 
 
 def participant_index(artifact: dict) -> dict[str, int]:
@@ -221,7 +265,10 @@ def evaluate_personalized(
     device: torch.device,
     target_mean: torch.Tensor | None = None,
     target_std: torch.Tensor | None = None,
+    baseline: torch.Tensor | None = None,
 ) -> dict[str, float]:
+    """See evaluate() for what `baseline` does (reconstructs absolute PAM
+    from a delta prediction for reporting, when the artifact has one)."""
     model.eval()
     predictions = []
     targets = []
@@ -235,7 +282,10 @@ def evaluate_personalized(
             )
             targets.append(target)
     if not predictions:
-        return {"mse": float("nan"), "mae": float("nan"), "rmse": float("nan")}
+        metrics = {"mse": float("nan"), "mae": float("nan"), "rmse": float("nan")}
+        if baseline is not None:
+            metrics.update({"abs_mae": float("nan"), "abs_rmse": float("nan")})
+        return metrics
     predicted = torch.cat(predictions)
     observed = torch.cat(targets)
     if target_mean is not None and target_std is not None:
@@ -243,11 +293,21 @@ def evaluate_personalized(
         observed = observed * target_std + target_mean
     error = predicted - observed
     mse = torch.mean(error.square()).item()
-    return {
+    metrics = {
         "mse": mse,
         "mae": torch.mean(error.abs()).item(),
         "rmse": float(np.sqrt(mse)),
+        "corr": _safe_corr(predicted, observed),
     }
+    if baseline is not None:
+        baseline = baseline.float()
+        abs_predicted = baseline + predicted
+        abs_observed = baseline + observed
+        abs_error = abs_predicted - abs_observed
+        abs_mse = torch.mean(abs_error.square()).item()
+        metrics["abs_mae"] = torch.mean(abs_error.abs()).item()
+        metrics["abs_rmse"] = float(np.sqrt(abs_mse))
+    return metrics
 
 
 def gaussian_nll(
@@ -357,6 +417,7 @@ def evaluate_uncertainty(
 
 def train(
     dataset: str,
+    predict_delta: bool = False,
     epochs: int = 30,
     batch_size: int = 128,
     hidden_size: int = 64,
@@ -371,7 +432,7 @@ def train(
 ) -> dict[str, float]:
     set_seed(seed)
     device = resolve_device(device)
-    artifact = load_sequence_artifact(dataset)
+    artifact = load_sequence_artifact(dataset, predict_delta=predict_delta)
     metadata = artifact.get("metadata", {})
     feature_count = artifact["train"]["X"].shape[-1]
     target_count = artifact["train"]["y"].shape[-1]
@@ -489,6 +550,7 @@ def train(
         device,
         target_mean=target_mean,
         target_std=target_std,
+        baseline=artifact["test"].get("baseline") if metadata.get("predict_delta") else None,
     )
     torch.save(
         {
@@ -513,6 +575,7 @@ def train(
 
 def train_personalized(
     dataset: str,
+    predict_delta: bool = False,
     epochs: int = 30,
     batch_size: int = 128,
     hidden_size: int = 64,
@@ -529,7 +592,7 @@ def train_personalized(
     """Train the participant-embedding GRU using the same split as baseline."""
     set_seed(seed)
     device = resolve_device(device)
-    artifact = load_sequence_artifact(dataset)
+    artifact = load_sequence_artifact(dataset, predict_delta=predict_delta)
     metadata = artifact.get("metadata", {})
     feature_count = artifact["train"]["X"].shape[-1]
     target_count = artifact["train"]["y"].shape[-1]
@@ -659,6 +722,7 @@ def train_personalized(
         device,
         target_mean=target_mean,
         target_std=target_std,
+        baseline=artifact["test"].get("baseline") if metadata.get("predict_delta") else None,
     )
     torch.save(
         {
@@ -686,6 +750,7 @@ def train_personalized(
 def train_uncertainty(
     dataset: str,
     personalized: bool = False,
+    predict_delta: bool = False,
     epochs: int = 30,
     batch_size: int = 128,
     hidden_size: int = 64,
@@ -711,7 +776,7 @@ def train_uncertainty(
     """
     set_seed(seed)
     device = resolve_device(device)
-    artifact = load_sequence_artifact(dataset)
+    artifact = load_sequence_artifact(dataset, predict_delta=predict_delta)
     metadata = artifact.get("metadata", {})
     feature_count = artifact["train"]["X"].shape[-1]
     target_count = artifact["train"]["y"].shape[-1]
@@ -846,6 +911,11 @@ def train_uncertainty(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset", choices=["studentlife", "ces"])
+    parser.add_argument(
+        "--predict-delta",
+        action="store_true",
+        help="load/train the separate next-day PAM-delta sequence cache",
+    )
     parser.add_argument(
         "--model",
         choices=["population", "personalized", "uncertainty", "uncertainty_personalized"],

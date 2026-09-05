@@ -21,29 +21,17 @@ def direction_feature_indices(
     direction_map: dict[str, list[str]],
     direction: str,
 ) -> list[int]:
-    """Return the feature indices associated with one behavioral direction."""
+    """Return feature indices associated with one behavioral direction."""
     if direction not in direction_map:
         raise KeyError(f"Unknown direction: {direction}")
-    names = list(feature_names)
-    return [
-        index
-        for index, feature_name in enumerate(names)
-        if feature_name in direction_map[direction]
-    ]
+    return [index for index, name in enumerate(feature_names) if name in direction_map[direction]]
 
 
-def default_direction_alphas(
-    lower: float,
-    upper: float,
-    steps: int = 21,
-) -> list[float]:
+def default_direction_alphas(lower: float, upper: float, steps: int = 21) -> list[float]:
     """Create a regular alpha sweep over a plausible direction range."""
     if steps <= 1:
         return [float(lower)]
-    lower = float(lower)
-    upper = float(upper)
-    if lower > upper:
-        lower, upper = upper, lower
+    lower, upper = sorted((float(lower), float(upper)))
     return [float(value) for value in np.linspace(lower, upper, steps)]
 
 
@@ -55,32 +43,20 @@ def plausible_alpha_bounds(
     lower_cap: float | None = None,
     upper_cap: float | None = None,
 ) -> tuple[float, float]:
-    """Bound alpha to the observed training-window range for a direction.
-
-    The perturbation is applied in standardized feature space, so a direction's
-    alpha range is derived from the training split's empirical spread for that
-    direction's feature columns and then clipped to a sensible paper-facing
-    range.
-    """
-    if direction not in direction_map:
-        raise KeyError(f"Unknown direction: {direction}")
+    """Estimate an empirical standardized alpha range for a direction."""
     indices = direction_feature_indices(feature_names, direction_map, direction)
     if not indices:
         return (float("nan"), float("nan"))
-
     train_x = artifact.get("train", {}).get("X")
     if train_x is None:
         raise KeyError("artifact['train']['X'] is required to estimate alpha bounds")
-    train_x = train_x.float()
-    direction_values = train_x[:, :, indices]
-    feature_sd = direction_values.std(dim=(0, 1), unbiased=False).clamp_min(1e-6)
-    composite = direction_values.mean(dim=2)
-    composite_mean = composite.mean()
-    # Alpha shifts every selected feature by alpha * its own SD. Convert the
-    # observed composite range into that same shared alpha unit.
-    step_scale = feature_sd.mean().clamp_min(1e-6)
-    lower = float(((composite.min() - composite_mean) / step_scale).item())
-    upper = float(((composite.max() - composite_mean) / step_scale).item())
+    values = train_x.float()[:, :, indices]
+    feature_sd = values.std(dim=(0, 1), unbiased=False).clamp_min(1e-6)
+    composite = values.mean(dim=2)
+    scale = feature_sd.mean().clamp_min(1e-6)
+    center = composite.mean()
+    lower = float(((composite.min() - center) / scale).item())
+    upper = float(((composite.max() - center) / scale).item())
     if lower_cap is not None:
         lower = max(lower, float(lower_cap))
     if upper_cap is not None:
@@ -91,92 +67,6 @@ def plausible_alpha_bounds(
         lower -= 1.0
         upper += 1.0
     return lower, upper
-
-
-def alpha_to_real_units(
-    alpha: float,
-    artifact: dict,
-    feature_names: Sequence[str],
-    direction_map: dict[str, list[str]],
-    direction: str,
-) -> dict[str, float]:
-    """Convert a standardized direction shift to each feature's raw units."""
-    metadata = artifact.get("metadata", {})
-    raw_stds = metadata.get("feature_raw_std")
-    if raw_stds is None:
-        raise KeyError(
-            "artifact metadata lacks feature_raw_std; rebuild the sequence "
-            "cache with `python -m src.build_sequences <dataset> --force`"
-        )
-
-    indices = direction_feature_indices(feature_names, direction_map, direction)
-    names = list(feature_names)
-    train_x = artifact["train"]["X"].float()
-    z_stds = train_x[:, :, indices].std(dim=(0, 1), unbiased=False).clamp_min(1e-6)
-    return {
-        names[index]: float(alpha) * float(z_stds[offset]) * float(raw_stds.get(names[index], 1.0))
-        for offset, index in enumerate(indices)
-    }
-
-
-def alpha_for_real_shift(
-    real_shift: float,
-    feature_name: str,
-    artifact: dict,
-) -> float:
-    """Convert a requested shift in one raw feature to standardized alpha.
-
-    This is the safe counterpart to treating ``alpha=1`` as a user action:
-    alpha=1 means one population standard deviation, which may be many hours
-    for a clock-time feature. The caller should validate the resulting value
-    against ``plausible_alpha_bounds`` before passing it to the engine.
-    """
-    raw_std = artifact.get("metadata", {}).get("feature_raw_std", {}).get(feature_name)
-    if raw_std is None or not np.isfinite(float(raw_std)) or float(raw_std) <= 0:
-        raise KeyError(f"No positive raw standard deviation for feature {feature_name!r}")
-    return float(real_shift) / float(raw_std)
-
-
-def raw_range_for_feature(feature_name: str, artifact: dict) -> tuple[float, float]:
-    """Return the observed train-split raw range for one feature."""
-    metadata = artifact.get("metadata", {})
-    raw_min = metadata.get("feature_raw_min", {}).get(feature_name)
-    raw_max = metadata.get("feature_raw_max", {}).get(feature_name)
-    if raw_min is None or raw_max is None:
-        raise KeyError(
-            "artifact metadata lacks feature_raw_min/feature_raw_max; run "
-            "the metadata migration or rebuild the sequence cache"
-        )
-    return float(raw_min), float(raw_max)
-
-
-def raw_value_for_window(
-    window: torch.Tensor,
-    artifact: dict,
-    feature_names: Sequence[str],
-    direction_map: dict[str, list[str]],
-    direction: str,
-    day_index: int = -1,
-) -> dict[str, float]:
-    """Return raw-unit values for one direction on one window day."""
-    metadata = artifact.get("metadata", {})
-    raw_means = metadata.get("feature_raw_mean")
-    raw_stds = metadata.get("feature_raw_std")
-    if raw_means is None or raw_stds is None:
-        raise KeyError(
-            "artifact metadata lacks raw feature statistics; rebuild the "
-            "sequence cache with `python -m src.build_sequences <dataset> --force`"
-        )
-
-    indices = direction_feature_indices(feature_names, direction_map, direction)
-    names = list(feature_names)
-    day = torch.as_tensor(window, dtype=torch.float32)[day_index]
-    return {
-        names[index]: float(day[index]) * float(raw_stds[names[index]])
-        + float(raw_means[names[index]])
-        for index in indices
-    }
-
 
 def direction_map_feature_counts(
     direction_map: dict[str, list[str]],
@@ -238,7 +128,12 @@ def perturb_window_for_direction(
     alpha: float,
     feature_sd: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Add a direction-specific alpha perturbation to a real input window."""
+    """Add a direction-specific alpha perturbation to a real input window.
+
+    A uniform shift across the window also shifts the rolling mean and
+    deviation-from-own-mean derived features. Difference and standard
+    deviation features remain unchanged by that uniform shift.
+    """
     tensor = torch.as_tensor(window, dtype=torch.float32)
     if tensor.dim() not in (2, 3):
         raise ValueError("window must have shape (T, F) or (B, T, F)")
@@ -254,13 +149,30 @@ def perturb_window_for_direction(
         train_x = train_x.float()
         feature_sd = train_x[:, :, indices].std(dim=(0, 1), unbiased=False).clamp_min(1e-6)
 
+    name_to_index = {name: index for index, name in enumerate(feature_names)}
+    derived_indices: list[int] = []
+    derived_sd: list[float] = []
+    for local_index, base_index in enumerate(indices):
+        base_name = feature_names[base_index]
+        for suffix in ("_roll_mean7", "_dev_from_own_mean"):
+            derived_index = name_to_index.get(f"{base_name}{suffix}")
+            if derived_index is not None:
+                derived_indices.append(derived_index)
+                derived_sd.append(float(feature_sd[local_index]))
+
     output = tensor.clone()
     if output.dim() == 2:
         perturbation = alpha * feature_sd.view(1, -1)
         output[:, indices] = output[:, indices] + perturbation
+        if derived_indices:
+            derived_shift = alpha * torch.tensor(derived_sd, dtype=output.dtype)
+            output[:, derived_indices] = output[:, derived_indices] + derived_shift.view(1, -1)
     else:
         perturbation = alpha * feature_sd.view(1, 1, -1)
         output[:, :, indices] = output[:, :, indices] + perturbation
+        if derived_indices:
+            derived_shift = alpha * torch.tensor(derived_sd, dtype=output.dtype)
+            output[:, :, derived_indices] = output[:, :, derived_indices] + derived_shift.view(1, 1, -1)
     return output
 
 
