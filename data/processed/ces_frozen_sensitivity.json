@@ -1,0 +1,60 @@
+{
+  "dataset": "ces",
+  "selected_features": "selected_features.json",
+  "selected_sleep_features": [
+    "sleep_start_delta1"
+  ],
+  "test_windows_evaluated": 212,
+  "models": {
+    "lasso": "StandardScaler + Lasso(alpha=0.01)",
+    "gradient_boosting": "GradientBoostingRegressor(max_depth=2, n_estimators=200, learning_rate=0.05)"
+  },
+  "lasso_closed_form_check": {
+    "predicted_change": -2.5132911722804687,
+    "coefficient": -2.5132911722804696,
+    "absolute_error": 8.881784197001252e-16
+  },
+  "sleep_scenario_summary": {
+    "lasso": {
+      "sleep_duration_plus_2h": {
+        "mean_change": 0.0,
+        "median_change": 0.0,
+        "positive_fraction": 0.0,
+        "negative_fraction": 0.0
+      },
+      "bedtime_one_hour_earlier": {
+        "mean_change": 0.0,
+        "median_change": 0.0,
+        "positive_fraction": 0.0,
+        "negative_fraction": 0.0
+      },
+      "duration_plus_2h_and_bedtime_earlier": {
+        "mean_change": 0.0,
+        "median_change": 0.0,
+        "positive_fraction": 0.0,
+        "negative_fraction": 0.0
+      }
+    },
+    "gradient_boosting": {
+      "sleep_duration_plus_2h": {
+        "mean_change": 0.0,
+        "median_change": 0.0,
+        "positive_fraction": 0.0,
+        "negative_fraction": 0.0
+      },
+      "bedtime_one_hour_earlier": {
+        "mean_change": 0.0,
+        "median_change": 0.0,
+        "positive_fraction": 0.0,
+        "negative_fraction": 0.0
+      },
+      "duration_plus_2h_and_bedtime_earlier": {
+        "mean_change": 0.0,
+        "median_change": 0.0,
+        "positive_fraction": 0.0,
+        "negative_fraction": 0.0
+      }
+    }
+  },
+  "interpretation": "Scenario outputs are model responses, not causal effects. Agreement is summarized by the sign of each model's change."
+}
