@@ -1,0 +1,38 @@
+{
+  "dataset": "ces",
+  "predict_delta": true,
+  "cache": "C:\\Users\\Admin\\OneDrive\\Desktop\\personatwin\\data\\processed\\ces_sequences_delta.pt",
+  "protocol": {
+    "split": "LeaveOneGroupOut over training windows",
+    "groups": "participant uid",
+    "feature_selection": "top absolute train-fold f_regression score",
+    "top_k": 50,
+    "scenario_aware": true,
+    "scenario_levers": [
+      "sleep_duration",
+      "sleep_start",
+      "sleep_end"
+    ],
+    "standardization": "fit on each fold training participants",
+    "model": "StandardScaler + Lasso(alpha=0.01)",
+    "participants": 206
+  },
+  "aggregate": {
+    "mae": {
+      "mean": 3.4912341670407043,
+      "std": 1.2767620755610598,
+      "count": 206
+    },
+    "rmse": {
+      "mean": 4.080332973221319,
+      "std": 1.389043427908828,
+      "count": 206
+    },
+    "corr": {
+      "mean": 0.6097165955306193,
+      "std": 0.34662201914990143,
+      "count": 194
+    }
+  },
+  "participant_table": "data\\processed\\ces_lopo_scenario_per_participant.csv"
+}

@@ -1,0 +1,80 @@
+{
+  "dataset": "ces",
+  "selected_features": "selected_features_scenario.json",
+  "selected_sleep_features": [
+    "sleep_duration",
+    "sleep_start",
+    "sleep_end",
+    "sleep_duration",
+    "sleep_start",
+    "sleep_end",
+    "sleep_duration",
+    "sleep_start",
+    "sleep_end",
+    "sleep_duration",
+    "sleep_start",
+    "sleep_end",
+    "sleep_duration",
+    "sleep_start",
+    "sleep_end",
+    "sleep_duration",
+    "sleep_start",
+    "sleep_end",
+    "sleep_duration",
+    "sleep_start",
+    "sleep_end"
+  ],
+  "test_windows_evaluated": 212,
+  "models": {
+    "lasso": "StandardScaler + Lasso(alpha=0.01)",
+    "gradient_boosting": "GradientBoostingRegressor(max_depth=2, n_estimators=200, learning_rate=0.05)"
+  },
+  "lasso_closed_form_check": {
+    "predicted_change": 0.02490821376545238,
+    "coefficient": 0.024908213765452467,
+    "absolute_error": 8.673617379884035e-17
+  },
+  "sleep_scenario_summary": {
+    "lasso": {
+      "sleep_duration_plus_2h": {
+        "mean_change": -0.41648863142941517,
+        "median_change": -0.4334890047392599,
+        "positive_fraction": 0.018867924528301886,
+        "negative_fraction": 0.9811320754716981
+      },
+      "bedtime_one_hour_earlier": {
+        "mean_change": 0.09420418699637848,
+        "median_change": 0.11317955572859617,
+        "positive_fraction": 0.9575471698113207,
+        "negative_fraction": 0.04245283018867924
+      },
+      "duration_plus_2h_and_bedtime_earlier": {
+        "mean_change": -0.33375336728228067,
+        "median_change": -0.32030944903567815,
+        "positive_fraction": 0.02358490566037736,
+        "negative_fraction": 0.9764150943396226
+      }
+    },
+    "gradient_boosting": {
+      "sleep_duration_plus_2h": {
+        "mean_change": -0.3291888005746494,
+        "median_change": -0.30367480515070167,
+        "positive_fraction": 0.05660377358490566,
+        "negative_fraction": 0.9009433962264151
+      },
+      "bedtime_one_hour_earlier": {
+        "mean_change": 0.05406704083158708,
+        "median_change": 0.0,
+        "positive_fraction": 0.4339622641509434,
+        "negative_fraction": 0.08490566037735849
+      },
+      "duration_plus_2h_and_bedtime_earlier": {
+        "mean_change": -0.25163268565675,
+        "median_change": -0.21695450733362942,
+        "positive_fraction": 0.05660377358490566,
+        "negative_fraction": 0.8820754716981132
+      }
+    }
+  },
+  "interpretation": "Scenario outputs are model responses, not causal effects. Agreement is summarized by the sign of each model's change."
+}

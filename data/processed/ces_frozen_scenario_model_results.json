@@ -1,0 +1,60 @@
+{
+  "selected_features": "selected_features_scenario.json",
+  "selected_feature_count": 50,
+  "gbm_cv": [
+    {
+      "max_depth": 2,
+      "n_estimators": 100,
+      "cv_mae": 3.326274489218723
+    },
+    {
+      "max_depth": 2,
+      "n_estimators": 200,
+      "cv_mae": 3.324834404156661
+    },
+    {
+      "max_depth": 3,
+      "n_estimators": 100,
+      "cv_mae": 3.3270010096930065
+    },
+    {
+      "max_depth": 3,
+      "n_estimators": 200,
+      "cv_mae": 3.32686777066643
+    }
+  ],
+  "validation": {
+    "ridge": {
+      "mae": 2.918887405056014,
+      "rmse": 3.7822050452022076,
+      "corr": 0.6573483760497081
+    },
+    "lasso": {
+      "mae": 2.9085085444747554,
+      "rmse": 3.7715909929829863,
+      "corr": 0.6595603553813656
+    },
+    "gradient_boosting": {
+      "mae": 2.9383265510015457,
+      "rmse": 3.8316797351809933,
+      "corr": 0.6448829717557456
+    }
+  },
+  "test": {
+    "ridge": {
+      "mae": 3.489007140299591,
+      "rmse": 4.172539798384461,
+      "corr": 0.6481499051198084
+    },
+    "lasso": {
+      "mae": 3.481706271607027,
+      "rmse": 4.169925915413498,
+      "corr": 0.6487008928510689
+    },
+    "gradient_boosting": {
+      "mae": 3.5609638823576537,
+      "rmse": 4.361778174649835,
+      "corr": 0.602925251538605
+    }
+  }
+}

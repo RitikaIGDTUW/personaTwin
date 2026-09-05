@@ -18,6 +18,7 @@ from sklearn.preprocessing import StandardScaler
 from src.config import sequence_cache_path
 
 DEFAULT_FEATURE_FILE = Path("selected_features.json")
+SCENARIO_LEVERS = ["sleep_duration", "sleep_start", "sleep_end"]
 
 
 def _values(split: dict[str, object], key: str) -> np.ndarray:
@@ -53,6 +54,7 @@ def freeze_features(
     top_k: int,
     dataset: str,
     predict_delta: bool,
+    scenario_aware: bool = False,
 ) -> dict[str, object]:
     train_x = _flatten(artifact["train"])
     train_y = _values(artifact["train"], "y").reshape(-1).astype(np.float64)
@@ -60,11 +62,19 @@ def freeze_features(
     scores, _ = f_regression(train_x[:, usable], train_y)
     usable_indices = np.flatnonzero(usable)
     ranking = np.argsort(np.nan_to_num(scores, nan=-np.inf))[::-1]
-    selected_indices = usable_indices[ranking[: min(top_k, len(ranking))]]
-
     metadata = artifact.get("metadata", {})
     feature_names = list(metadata.get("feature_names", []))
     lookback = int(metadata.get("lookback_days", artifact["train"]["X"].shape[1]))
+    pinned_indices = []
+    if scenario_aware:
+        missing = [lever for lever in SCENARIO_LEVERS if lever not in feature_names]
+        if missing:
+            raise KeyError(f"Scenario levers missing from feature schema: {missing}")
+        for day_offset in range(lookback):
+            for lever in SCENARIO_LEVERS:
+                pinned_indices.append(day_offset * len(feature_names) + feature_names.index(lever))
+    ranked_indices = [int(index) for index in usable_indices[ranking]]
+    selected_indices = list(dict.fromkeys(pinned_indices + ranked_indices))[:top_k]
     selected = []
     for flat_index in selected_indices:
         day_offset, feature_index = divmod(int(flat_index), len(feature_names))
@@ -82,7 +92,12 @@ def freeze_features(
         "predict_delta": predict_delta,
         "cache_feature_count": len(feature_names),
         "lookback_days": lookback,
-        "selection": "top absolute train-only f_regression score",
+        "selection": (
+            "scenario levers pinned, remaining slots by train-only f_regression score"
+            if scenario_aware
+            else "top absolute train-only f_regression score"
+        ),
+        "scenario_levers": SCENARIO_LEVERS if scenario_aware else [],
         "top_k": len(selected),
         "selected_features": selected,
     }
@@ -175,6 +190,7 @@ def main() -> None:
     parser.add_argument("--selected-features", type=Path, default=DEFAULT_FEATURE_FILE)
     parser.add_argument("--output", type=Path, default=None)
     parser.add_argument("--freeze-only", action="store_true")
+    parser.add_argument("--scenario-aware", action="store_true")
     args = parser.parse_args()
 
     path = sequence_cache_path(args.dataset, predict_delta=args.predict_delta)
@@ -185,6 +201,7 @@ def main() -> None:
         args.top_k,
         args.dataset,
         args.predict_delta,
+        args.scenario_aware,
     )
     print(json.dumps(frozen, indent=2))
     if args.freeze_only:

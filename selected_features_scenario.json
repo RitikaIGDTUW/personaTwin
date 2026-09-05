@@ -1,0 +1,315 @@
+{
+  "dataset": "ces",
+  "predict_delta": true,
+  "cache_feature_count": 3997,
+  "lookback_days": 7,
+  "selection": "scenario levers pinned, remaining slots by train-only f_regression score",
+  "scenario_levers": [
+    "sleep_duration",
+    "sleep_start",
+    "sleep_end"
+  ],
+  "top_k": 50,
+  "selected_features": [
+    {
+      "flattened_index": 482,
+      "day_offset": 0,
+      "feature_index": 482,
+      "feature_name": "sleep_duration"
+    },
+    {
+      "flattened_index": 484,
+      "day_offset": 0,
+      "feature_index": 484,
+      "feature_name": "sleep_start"
+    },
+    {
+      "flattened_index": 483,
+      "day_offset": 0,
+      "feature_index": 483,
+      "feature_name": "sleep_end"
+    },
+    {
+      "flattened_index": 4479,
+      "day_offset": 1,
+      "feature_index": 482,
+      "feature_name": "sleep_duration"
+    },
+    {
+      "flattened_index": 4481,
+      "day_offset": 1,
+      "feature_index": 484,
+      "feature_name": "sleep_start"
+    },
+    {
+      "flattened_index": 4480,
+      "day_offset": 1,
+      "feature_index": 483,
+      "feature_name": "sleep_end"
+    },
+    {
+      "flattened_index": 8476,
+      "day_offset": 2,
+      "feature_index": 482,
+      "feature_name": "sleep_duration"
+    },
+    {
+      "flattened_index": 8478,
+      "day_offset": 2,
+      "feature_index": 484,
+      "feature_name": "sleep_start"
+    },
+    {
+      "flattened_index": 8477,
+      "day_offset": 2,
+      "feature_index": 483,
+      "feature_name": "sleep_end"
+    },
+    {
+      "flattened_index": 12473,
+      "day_offset": 3,
+      "feature_index": 482,
+      "feature_name": "sleep_duration"
+    },
+    {
+      "flattened_index": 12475,
+      "day_offset": 3,
+      "feature_index": 484,
+      "feature_name": "sleep_start"
+    },
+    {
+      "flattened_index": 12474,
+      "day_offset": 3,
+      "feature_index": 483,
+      "feature_name": "sleep_end"
+    },
+    {
+      "flattened_index": 16470,
+      "day_offset": 4,
+      "feature_index": 482,
+      "feature_name": "sleep_duration"
+    },
+    {
+      "flattened_index": 16472,
+      "day_offset": 4,
+      "feature_index": 484,
+      "feature_name": "sleep_start"
+    },
+    {
+      "flattened_index": 16471,
+      "day_offset": 4,
+      "feature_index": 483,
+      "feature_name": "sleep_end"
+    },
+    {
+      "flattened_index": 20467,
+      "day_offset": 5,
+      "feature_index": 482,
+      "feature_name": "sleep_duration"
+    },
+    {
+      "flattened_index": 20469,
+      "day_offset": 5,
+      "feature_index": 484,
+      "feature_name": "sleep_start"
+    },
+    {
+      "flattened_index": 20468,
+      "day_offset": 5,
+      "feature_index": 483,
+      "feature_name": "sleep_end"
+    },
+    {
+      "flattened_index": 24464,
+      "day_offset": 6,
+      "feature_index": 482,
+      "feature_name": "sleep_duration"
+    },
+    {
+      "flattened_index": 24466,
+      "day_offset": 6,
+      "feature_index": 484,
+      "feature_name": "sleep_start"
+    },
+    {
+      "flattened_index": 24465,
+      "day_offset": 6,
+      "feature_index": 483,
+      "feature_name": "sleep_end"
+    },
+    {
+      "flattened_index": 27978,
+      "day_offset": 6,
+      "feature_index": 3996,
+      "feature_name": "pam_history_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 24552,
+      "day_offset": 6,
+      "feature_index": 570,
+      "feature_name": "pam_history"
+    },
+    {
+      "flattened_index": 27975,
+      "day_offset": 6,
+      "feature_index": 3993,
+      "feature_name": "pam_history_roll_mean7"
+    },
+    {
+      "flattened_index": 27977,
+      "day_offset": 6,
+      "feature_index": 3995,
+      "feature_name": "pam_history_trend7"
+    },
+    {
+      "flattened_index": 27974,
+      "day_offset": 6,
+      "feature_index": 3992,
+      "feature_name": "pam_history_delta3"
+    },
+    {
+      "flattened_index": 5655,
+      "day_offset": 1,
+      "feature_index": 1658,
+      "feature_name": "audio_amp_mean_hr_2_delta3"
+    },
+    {
+      "flattened_index": 15359,
+      "day_offset": 3,
+      "feature_index": 3368,
+      "feature_name": "other_playing_num_hr_19_delta3"
+    },
+    {
+      "flattened_index": 5589,
+      "day_offset": 1,
+      "feature_index": 1592,
+      "feature_name": "audio_amp_mean_hr_1_delta3"
+    },
+    {
+      "flattened_index": 15164,
+      "day_offset": 3,
+      "feature_index": 3173,
+      "feature_name": "other_playing_duration_hr_14_trend7"
+    },
+    {
+      "flattened_index": 4211,
+      "day_offset": 1,
+      "feature_index": 214,
+      "feature_name": "audio_amp_std_hr_3"
+    },
+    {
+      "flattened_index": 12939,
+      "day_offset": 3,
+      "feature_index": 948,
+      "feature_name": "act_running_hr_1_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 26051,
+      "day_offset": 6,
+      "feature_index": 2069,
+      "feature_name": "audio_convo_num_ep_0_trend7"
+    },
+    {
+      "flattened_index": 3287,
+      "day_offset": 0,
+      "feature_index": 3287,
+      "feature_name": "other_playing_num_ep_1_trend7"
+    },
+    {
+      "flattened_index": 5593,
+      "day_offset": 1,
+      "feature_index": 1596,
+      "feature_name": "audio_amp_mean_hr_1_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 27185,
+      "day_offset": 6,
+      "feature_index": 3203,
+      "feature_name": "other_playing_duration_hr_19_trend7"
+    },
+    {
+      "flattened_index": 19248,
+      "day_offset": 4,
+      "feature_index": 3260,
+      "feature_name": "other_playing_duration_hr_7_delta3"
+    },
+    {
+      "flattened_index": 26640,
+      "day_offset": 6,
+      "feature_index": 2658,
+      "feature_name": "loc_home_unlock_num_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 5761,
+      "day_offset": 1,
+      "feature_index": 1764,
+      "feature_name": "audio_amp_std_hr_1_dev_from_own_mean"
+    },
+    {
+      "flattened_index": 4167,
+      "day_offset": 1,
+      "feature_index": 170,
+      "feature_name": "audio_amp_mean_hr_1"
+    },
+    {
+      "flattened_index": 4986,
+      "day_offset": 1,
+      "feature_index": 989,
+      "feature_name": "act_running_hr_16_trend7"
+    },
+    {
+      "flattened_index": 5852,
+      "day_offset": 1,
+      "feature_index": 1855,
+      "feature_name": "audio_amp_std_hr_3_delta1"
+    },
+    {
+      "flattened_index": 3007,
+      "day_offset": 0,
+      "feature_index": 3007,
+      "feature_name": "loc_visit_num_hr_17_delta1"
+    },
+    {
+      "flattened_index": 4195,
+      "day_offset": 1,
+      "feature_index": 198,
+      "feature_name": "audio_amp_std_hr_1"
+    },
+    {
+      "flattened_index": 26063,
+      "day_offset": 6,
+      "feature_index": 2081,
+      "feature_name": "audio_convo_num_ep_2_trend7"
+    },
+    {
+      "flattened_index": 5565,
+      "day_offset": 1,
+      "feature_index": 1568,
+      "feature_name": "audio_amp_mean_ep_1_delta3"
+    },
+    {
+      "flattened_index": 15730,
+      "day_offset": 3,
+      "feature_index": 3739,
+      "feature_name": "unlock_num_hr_19_delta1"
+    },
+    {
+      "flattened_index": 1012,
+      "day_offset": 0,
+      "feature_index": 1012,
+      "feature_name": "act_running_hr_2_roll_std7"
+    },
+    {
+      "flattened_index": 12053,
+      "day_offset": 3,
+      "feature_index": 62,
+      "feature_name": "act_running_hr_1"
+    },
+    {
+      "flattened_index": 17217,
+      "day_offset": 4,
+      "feature_index": 1229,
+      "feature_name": "act_still_hr_6_trend7"
+    }
+  ]
+}
